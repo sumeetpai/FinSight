@@ -1,5 +1,5 @@
 package com.FinSight_Backend.dto;
-//import com.FinSight_Backend.model.Stocks;
+import com.FinSight_Backend.model.Stocks;
 import com.FinSight_Backend.model.User;
 import lombok.*;
 

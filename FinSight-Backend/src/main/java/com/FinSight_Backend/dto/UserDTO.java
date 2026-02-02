@@ -1,5 +1,5 @@
 package com.FinSight_Backend.dto;
-//import com.FinSight_Backend.model.Portfolio;
+import com.FinSight_Backend.model.Portfolio;
 import com.FinSight_Backend.model.Transaction;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
