@@ -18,5 +18,5 @@ public class Stocks {
     private Long market_cap;
     private Integer current_price;
     @ManyToMany
-    private List<Portfolio> portfolios;
+    private List<Portfolio> portfolio;
 }

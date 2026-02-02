@@ -12,7 +12,7 @@ import java.util.List;
 public class Transaction {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer t_id;
     private String stock_sym;
     private String type;

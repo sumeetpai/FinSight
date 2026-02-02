@@ -10,7 +10,7 @@ import java.sql.Timestamp;
 @Data
 public class User {
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Integer user_id;
     private String username;
     private String email;

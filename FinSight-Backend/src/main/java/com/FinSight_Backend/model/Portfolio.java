@@ -10,7 +10,7 @@ import java.util.List;
 public class Portfolio {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer portfolio_id;
     private Integer shares;
     private String stock_id;
@@ -19,7 +19,7 @@ public class Portfolio {
     private Integer yield;
     @OneToMany(mappedBy = "portfolio")
     private List<User> user;
-    @ManyToMany(mappedBy = "portfolios")
+    @ManyToMany(mappedBy = "portfolio")
     private List<Stocks> stocks;
 
 }
