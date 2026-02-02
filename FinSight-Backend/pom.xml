@@ -8,8 +8,8 @@
 		<version>4.0.2</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.FinSight-Backend</groupId>
-	<artifactId>FinSight-Backend</artifactId>
+	<groupId>com.FinSight_Backend</groupId>
+	<artifactId>FinSight_Backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>FinSight-Backend</name>
 	<description>Demo project for Spring Boot</description>

@@ -1,4 +1,4 @@
-package com.FinSight_Backend.FinSight_Backend;
+package com.FinSight_Backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
