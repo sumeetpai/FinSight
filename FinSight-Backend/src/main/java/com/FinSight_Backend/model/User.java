@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 @Entity
 @Table(name = "user")
@@ -16,8 +17,8 @@ public class User {
     private String email;
     private String password;
     private Timestamp createdAt;
-    @ManyToOne
-    private Portfolio portfolio;
-    @ManyToOne
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Portfolio> portfolios;
+    @ManyToOne(fetch = FetchType.LAZY)
     private Transaction transaction;
 }

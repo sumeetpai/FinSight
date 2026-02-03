@@ -12,14 +12,14 @@ public class Portfolio {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer portfolio_id;
-    private Integer shares;
-    private String stock_id;
-    private Long current_price;
+    private String name;
+    private Long total_value;
     private Long cost_basis;
     private Integer yield;
-    @OneToMany(mappedBy = "portfolio")
-    private List<User> user;
-    @ManyToMany(mappedBy = "portfolio")
-    private List<Stocks> stocks;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+    @OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PortfolioStock> portfolioStocks;
 
 }

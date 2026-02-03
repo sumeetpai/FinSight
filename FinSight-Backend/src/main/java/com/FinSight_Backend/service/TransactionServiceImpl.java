@@ -15,51 +15,47 @@ public class TransactionServiceImpl implements TransactionService{
     @Override
     public TransactionDTO addTransaction(TransactionDTO transactionDTO) {
         Transaction transaction = new Transaction();
-        return getTransactionDTO(transactionDTO, transaction);
+        return mapAndSave(transactionDTO, transaction);
 
     }
 
-    private TransactionDTO getTransactionDTO(TransactionDTO transactionDTO, Transaction transaction) {
-        transaction.setPrice(transactionDTO.getPrice());
-        transaction.setQty(transactionDTO.getQty());
-        transaction.setStock_sym(transactionDTO.getStock_sym());
-        transaction.setTimestamp_t(transactionDTO.getTimestamp_t());
+    private TransactionDTO mapAndSave(TransactionDTO transactionDTO, Transaction transaction) {
+        transaction.setStock_id(transactionDTO.getStock_id());
+        transaction.setPortfolio_id(transactionDTO.getPortfolio_id());
+        transaction.setUser_id(transactionDTO.getUser_id());
         transaction.setType(transactionDTO.getType());
-        transaction.setUsers(transactionDTO.getUsers());
+        transaction.setQty(transactionDTO.getQty());
+        transaction.setPrice(transactionDTO.getPrice());
+        transaction.setTimestamp_t(transactionDTO.getTimestamp_t());
         Transaction savedTransaction = transactionRepo.save(transaction);
-        return getTransactionDTO(savedTransaction);
+        return toDTO(savedTransaction);
     }
 
-    private TransactionDTO getTransactionDTO(Transaction savedTransaction) {
+    private TransactionDTO toDTO(Transaction savedTransaction) {
         TransactionDTO transactionDTO = new TransactionDTO();
-        transactionDTO.setPrice(savedTransaction.getPrice());
-        transactionDTO.setQty(savedTransaction.getQty());
-        transactionDTO.setStock_sym(savedTransaction.getStock_sym());
-        transactionDTO.setTimestamp_t(savedTransaction.getTimestamp_t());
+        transactionDTO.setT_id(savedTransaction.getT_id());
+        transactionDTO.setStock_id(savedTransaction.getStock_id());
+        transactionDTO.setPortfolio_id(savedTransaction.getPortfolio_id());
+        transactionDTO.setUser_id(savedTransaction.getUser_id());
         transactionDTO.setType(savedTransaction.getType());
-        transactionDTO.setUsers(savedTransaction.getUsers());
+        transactionDTO.setQty(savedTransaction.getQty());
+        transactionDTO.setPrice(savedTransaction.getPrice());
+        transactionDTO.setTimestamp_t(savedTransaction.getTimestamp_t());
         return transactionDTO;
     }
 
     @Override
     public TransactionDTO getTransaction(Integer t_id) {
-        Transaction transaction = transactionRepo.findById(t_id).isPresent() ? transactionRepo.findById(t_id).get() : null;
-        assert transaction != null;
-        return getTransactionDTO(transaction);
+        return transactionRepo.findById(t_id).map(this::toDTO).orElse(null);
     }
 
     @Override
     public TransactionDTO updateTransaction(Integer t_id, TransactionDTO transactionDTO) {
-        Transaction transaction = transactionRepo.findById(t_id).isPresent() ? transactionRepo.findById(t_id).get() : null;
-        assert transaction != null;
-        return getTransactionDTO(transactionDTO, transaction);
+        return transactionRepo.findById(t_id).map(tx -> mapAndSave(transactionDTO, tx)).orElse(null);
     }
 
     @Override
     public String deleteTransaction(Integer t_id) {
-        Transaction transaction = transactionRepo.findById(t_id).isPresent() ? transactionRepo.findById(t_id).get() : null;
-        assert transaction != null;
-        transactionRepo.delete(transaction);
-        return "Transaction deleted";
+        return transactionRepo.findById(t_id).map(tx -> { transactionRepo.delete(tx); return "Transaction deleted"; }).orElse(null);
     }
 }
