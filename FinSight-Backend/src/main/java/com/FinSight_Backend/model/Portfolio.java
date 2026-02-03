@@ -19,12 +19,7 @@ public class Portfolio {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
-    @ManyToMany
-    @JoinTable(
-            name = "portfolio_stocks",
-            joinColumns = @JoinColumn(name = "portfolio_id"),
-            inverseJoinColumns = @JoinColumn(name = "stock_id")
-    )
-    private List<Stocks> stocks;
+    @OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PortfolioStock> portfolioStocks;
 
 }

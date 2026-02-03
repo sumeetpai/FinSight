@@ -4,6 +4,7 @@ import com.FinSight_Backend.dto.StocksDTO;
 import com.FinSight_Backend.model.Stocks;
 import com.FinSight_Backend.repository.StocksRepo;
 import com.FinSight_Backend.repository.PortfolioRepo;
+import com.FinSight_Backend.repository.PortfolioStockRepo;
 import com.FinSight_Backend.model.Portfolio;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class StockServiceImpl implements StockService {
 
     private StocksRepo stocksRepo;
     private PortfolioRepo portfolioRepo;
+    private PortfolioStockRepo portfolioStockRepo;
     @Override
     public StocksDTO addStocks(StocksDTO stocksDTO) {
         Stocks stocks = new Stocks();
@@ -32,8 +34,9 @@ public class StockServiceImpl implements StockService {
         stocksDTO.setDay_before_price(stocks.getDay_before_price());
         stocksDTO.setMarket_cap(stocks.getMarket_cap());
         stocksDTO.setCurrent_price(stocks.getCurrent_price());
-        stocksDTO.setPortfolio_ids(stocks.getPortfolio() != null ?
-                stocks.getPortfolio().stream().map(Portfolio::getPortfolio_id).collect(Collectors.toList()) : null);
+        // find portfolios that include this stock via PortfolioStock
+        List<com.FinSight_Backend.model.PortfolioStock> psList = portfolioStockRepo.findByStockId(stocks.getStock_id());
+        stocksDTO.setPortfolio_ids(psList != null ? psList.stream().map(ps -> ps.getPortfolio().getPortfolio_id()).collect(Collectors.toList()) : null);
         return stocksDTO;
     }
 
@@ -58,13 +61,15 @@ public class StockServiceImpl implements StockService {
         stocks.setMarket_cap(stocksDTO.getMarket_cap());
         stocks.setCurrent_price(stocksDTO.getCurrent_price());
         if (stocksDTO.getPortfolio_ids() != null) {
+            // create portfolio-stock entries via PortfolioStockRepo handled by PortfolioService; here we just ignore direct setting
+            // ensure portfolios exist
             List<Portfolio> portfolios = stocksDTO.getPortfolio_ids().stream()
                     .map(id -> portfolioRepo.findById(id).orElse(null))
                     .filter(p -> p != null)
                     .collect(Collectors.toList());
-            stocks.setPortfolio(portfolios);
+            // no direct mapping on Stocks entity; portfolio membership is managed via PortfolioStock
         } else {
-            stocks.setPortfolio(null);
+            // nothing to set
         }
         Stocks savedStock = stocksRepo.save(stocks);
         return getStocksDTO(savedStock);

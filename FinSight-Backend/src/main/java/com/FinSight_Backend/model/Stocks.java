@@ -2,8 +2,6 @@ package com.FinSight_Backend.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.util.List;
-
 @Entity
 @Table(name = "stocks")
 @Data
@@ -17,6 +15,5 @@ public class Stocks {
     private Integer day_before_price;
     private Long market_cap;
     private Integer current_price;
-    @ManyToMany(mappedBy = "stocks")
-    private List<Portfolio> portfolio;
+
 }

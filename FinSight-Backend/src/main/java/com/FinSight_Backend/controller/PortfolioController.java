@@ -2,6 +2,7 @@ package com.FinSight_Backend.controller;
 
 import com.FinSight_Backend.dto.PortfolioDTO;
 import com.FinSight_Backend.dto.AddStockRequestDTO;
+import com.FinSight_Backend.dto.RemoveStockRequestDTO;
 import com.FinSight_Backend.service.PortfolioService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -62,8 +63,7 @@ public class PortfolioController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         Integer qty = req.getQty() != null ? req.getQty() : 1;
-        // currently service treats qty as 1; pass user and stock
-        PortfolioDTO updated = portfolioService.addStockToPortfolio(portfolio_id, req.getStock_id(), req.getUser_id());
+        PortfolioDTO updated = portfolioService.addStockToPortfolio(portfolio_id, req.getStock_id(), req.getUser_id(), qty);
         if (updated == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
@@ -71,11 +71,13 @@ public class PortfolioController {
     }
 
     @DeleteMapping("{portfolio_id}/stocks/{stock_id}")
-    public ResponseEntity<PortfolioDTO> removeStockFromPortfolio(@PathVariable Integer portfolio_id, @PathVariable Integer stock_id, @RequestParam Integer user_id) {
-        PortfolioDTO updated = portfolioService.removeStockFromPortfolio(portfolio_id, stock_id, user_id);
-        if (updated == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+    public ResponseEntity<PortfolioDTO> removeStockFromPortfolio(@PathVariable Integer portfolio_id,
+                                                                 @PathVariable Integer stock_id,
+                                                                 @RequestBody RemoveStockRequestDTO req) {
+        if (req == null || req.getUser_id() == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        Integer qty = req.getQty() != null ? req.getQty() : 1;
+        PortfolioDTO updated = portfolioService.removeStockFromPortfolio(portfolio_id, stock_id, req.getUser_id(), qty);
+        if (updated == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         return new ResponseEntity<>(updated, HttpStatus.OK);
     }
 

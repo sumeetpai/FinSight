@@ -6,9 +6,11 @@ import com.FinSight_Backend.repository.PortfolioRepo;
 import com.FinSight_Backend.repository.UserRepo;
 import com.FinSight_Backend.repository.StocksRepo;
 import com.FinSight_Backend.repository.TransactionRepo;
+import com.FinSight_Backend.repository.PortfolioStockRepo;
 import com.FinSight_Backend.model.User;
 import com.FinSight_Backend.model.Stocks;
 import com.FinSight_Backend.model.Transaction;
+import com.FinSight_Backend.model.PortfolioStock;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +25,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     private UserRepo userRepo;
     private StocksRepo stocksRepo;
     private TransactionRepo transactionRepo;
+    private PortfolioStockRepo portfolioStockRepo;
     @Override
     public PortfolioDTO addPortfolio(PortfolioDTO portfolioDTO) {
         // validate owning user exists
@@ -44,8 +47,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         portfolioDTO.setCost_basis(portfolio.getCost_basis());
         portfolioDTO.setYield(portfolio.getYield());
         portfolioDTO.setUser_id(portfolio.getUser() != null ? portfolio.getUser().getUser_id() : null);
-        portfolioDTO.setStock_ids(portfolio.getStocks() != null ?
-                portfolio.getStocks().stream().map(Stocks::getStock_id).collect(Collectors.toList()) : null);
+        portfolioDTO.setStock_entries(portfolio.getPortfolioStocks() != null ?
+                portfolio.getPortfolioStocks().stream()
+                        .map(ps -> new com.FinSight_Backend.dto.StockEntryDTO(ps.getStock().getStock_id(), ps.getQuantity()))
+                        .collect(Collectors.toList()) : null);
         return portfolioDTO;
     }
 
@@ -60,23 +65,23 @@ public class PortfolioServiceImpl implements PortfolioService {
         } else {
             portfolio.setUser(null);
         }
-        if (portfolioDTO.getStock_ids() != null) {
-            List<Stocks> stocks = portfolioDTO.getStock_ids().stream()
-                    .map(id -> stocksRepo.findById(id).orElse(null))
-                    .filter(s -> s != null)
+        if (portfolioDTO.getStock_entries() != null) {
+            // convert entries to PortfolioStock list
+            List<PortfolioStock> entries = portfolioDTO.getStock_entries().stream()
+                    .map(entry -> {
+                        Stocks s = stocksRepo.findById(entry.getStock_id()).orElse(null);
+                        if (s == null) return null;
+                        PortfolioStock ps = new PortfolioStock();
+                        ps.setPortfolio(portfolio);
+                        ps.setStock(s);
+                        ps.setQuantity(entry.getQuantity() != null ? entry.getQuantity() : 1);
+                        return ps;
+                    })
+                    .filter(ps -> ps != null)
                     .collect(Collectors.toList());
-            portfolio.setStocks(stocks);
-            // keep both sides in sync
-            for (Stocks s : stocks) {
-                if (s.getPortfolio() == null) {
-                    s.setPortfolio(new java.util.ArrayList<>());
-                }
-                if (!s.getPortfolio().contains(portfolio)) {
-                    s.getPortfolio().add(portfolio);
-                }
-            }
+            portfolio.setPortfolioStocks(entries);
         } else {
-            portfolio.setStocks(null);
+            portfolio.setPortfolioStocks(null);
         }
         Portfolio savedPortfolio = portfolioRepo.save(portfolio);
         return getPortfolioDTO(savedPortfolio);
@@ -111,70 +116,70 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public PortfolioDTO addStockToPortfolio(Integer portfolio_id, Integer stock_id, Integer user_id) {
+    public PortfolioDTO addStockToPortfolio(Integer portfolio_id, Integer stock_id, Integer user_id, Integer qty) {
         Portfolio portfolio = portfolioRepo.findById(portfolio_id).orElse(null);
         if (portfolio == null) return null;
         // validate stock exists
         Stocks stock = stocksRepo.findById(stock_id).orElse(null);
         if (stock == null) return null;
-        // add if not present
-        if (portfolio.getStocks() == null) {
-            portfolio.setStocks(new java.util.ArrayList<>());
+        int addedQty = qty != null && qty > 0 ? qty : 1;
+        // see if an entry exists
+        PortfolioStock existing = portfolioStockRepo.findByPortfolioIdAndStockId(portfolio_id, stock_id);
+        if (existing != null) {
+            existing.setQuantity(existing.getQuantity() + addedQty);
+            portfolioStockRepo.save(existing);
+        } else {
+            PortfolioStock ps = new PortfolioStock();
+            ps.setPortfolio(portfolio);
+            ps.setStock(stock);
+            ps.setQuantity(addedQty);
+            portfolioStockRepo.save(ps);
         }
-        boolean added = false;
-        if (!portfolio.getStocks().contains(stock)) {
-            portfolio.getStocks().add(stock);
-            // keep inverse side
-            if (stock.getPortfolio() == null) stock.setPortfolio(new java.util.ArrayList<>());
-            if (!stock.getPortfolio().contains(portfolio)) stock.getPortfolio().add(portfolio);
-            added = true;
-        }
-        // update total_value as sum of stock.current_price
-        long total = portfolio.getStocks().stream().mapToLong(s -> s.getCurrent_price() != null ? s.getCurrent_price() : 0).sum();
+        // recompute total_value = sum(stock.current_price * qty)
+        List<PortfolioStock> entries = portfolioStockRepo.findByPortfolioId(portfolio_id);
+        long total = entries.stream().mapToLong(e -> (e.getStock().getCurrent_price() != null ? e.getStock().getCurrent_price() : 0) * (e.getQuantity() != null ? e.getQuantity() : 0)).sum();
         portfolio.setTotal_value(total);
         Portfolio saved = portfolioRepo.save(portfolio);
-        // record transaction if added
-        if (added) {
-            Transaction tx = new Transaction();
-            tx.setStock_id(stock_id);
-            tx.setPortfolio_id(saved.getPortfolio_id());
-            tx.setUser_id(user_id);
-            tx.setType("ADD");
-            tx.setQty(1);
-            tx.setPrice(stock.getCurrent_price() != null ? stock.getCurrent_price().longValue() : 0L);
-            tx.setTimestamp_t(new java.sql.Timestamp(System.currentTimeMillis()));
-            transactionRepo.save(tx);
-        }
+        // record transaction
+        Transaction tx = new Transaction();
+        tx.setStock_id(stock_id);
+        tx.setPortfolio_id(saved.getPortfolio_id());
+        tx.setUser_id(user_id);
+        tx.setType("ADD");
+        tx.setQty(addedQty);
+        tx.setPrice(stock.getCurrent_price() != null ? stock.getCurrent_price().longValue() : 0L);
+        tx.setTimestamp_t(new java.sql.Timestamp(System.currentTimeMillis()));
+        transactionRepo.save(tx);
         return getPortfolioDTO(saved);
     }
 
     @Override
-    public PortfolioDTO removeStockFromPortfolio(Integer portfolio_id, Integer stock_id, Integer user_id) {
+    public PortfolioDTO removeStockFromPortfolio(Integer portfolio_id, Integer stock_id, Integer user_id, Integer qty) {
         Portfolio portfolio = portfolioRepo.findById(portfolio_id).orElse(null);
         if (portfolio == null) return null;
-        Stocks stock = stocksRepo.findById(stock_id).orElse(null);
-        if (stock == null) return null;
-        boolean removed = false;
-        if (portfolio.getStocks() != null && portfolio.getStocks().contains(stock)) {
-            portfolio.getStocks().remove(stock);
-            removed = true;
-            // remove inverse side
-            if (stock.getPortfolio() != null) stock.getPortfolio().remove(portfolio);
+        PortfolioStock existing = portfolioStockRepo.findByPortfolioIdAndStockId(portfolio_id, stock_id);
+        if (existing == null) return null;
+        int removeQty = qty != null && qty > 0 ? qty : 1;
+        if (existing.getQuantity() > removeQty) {
+            existing.setQuantity(existing.getQuantity() - removeQty);
+            portfolioStockRepo.save(existing);
+        } else {
+            // remove the entry
+            portfolioStockRepo.delete(existing);
         }
-        long total = portfolio.getStocks() != null ? portfolio.getStocks().stream().mapToLong(s -> s.getCurrent_price() != null ? s.getCurrent_price() : 0).sum() : 0L;
+        List<PortfolioStock> entries = portfolioStockRepo.findByPortfolioId(portfolio_id);
+        long total = entries.stream().mapToLong(e -> (e.getStock().getCurrent_price() != null ? e.getStock().getCurrent_price() : 0) * (e.getQuantity() != null ? e.getQuantity() : 0)).sum();
         portfolio.setTotal_value(total);
         Portfolio saved = portfolioRepo.save(portfolio);
-        if (removed) {
-            Transaction tx = new Transaction();
-            tx.setStock_id(stock_id);
-            tx.setPortfolio_id(saved.getPortfolio_id());
-            tx.setUser_id(user_id);
-            tx.setType("REMOVE");
-            tx.setQty(1);
-            tx.setPrice(stock.getCurrent_price() != null ? stock.getCurrent_price().longValue() : 0L);
-            tx.setTimestamp_t(new java.sql.Timestamp(System.currentTimeMillis()));
-            transactionRepo.save(tx);
-        }
+        Transaction tx = new Transaction();
+        tx.setStock_id(stock_id);
+        tx.setPortfolio_id(saved.getPortfolio_id());
+        tx.setUser_id(user_id);
+        tx.setType("REMOVE");
+        tx.setQty(removeQty);
+        tx.setPrice(existing.getStock().getCurrent_price() != null ? existing.getStock().getCurrent_price().longValue() : 0L);
+        tx.setTimestamp_t(new java.sql.Timestamp(System.currentTimeMillis()));
+        transactionRepo.save(tx);
         return getPortfolioDTO(saved);
     }
 }

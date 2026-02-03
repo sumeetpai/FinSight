@@ -15,6 +15,6 @@ public class PortfolioDTO {
     private Long cost_basis;
     private Integer yield;
     private Integer user_id;
-    private List<Integer> stock_ids;
+    private List<StockEntryDTO> stock_entries;
 
 }
