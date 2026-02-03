@@ -1,6 +1,7 @@
 package com.FinSight_Backend.controller;
 
 import com.FinSight_Backend.dto.UserDTO;
+import com.FinSight_Backend.dto.UserCreateDTO;
 import com.FinSight_Backend.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,10 +17,16 @@ public class UserController {
 
     // -------------------- CREATE USER --------------------
     @PostMapping
-    public ResponseEntity<UserDTO> addUser(@RequestBody UserDTO userDTO) {
-        if (userDTO == null || userDTO.getUsername() == null || userDTO.getUsername().isEmpty()) {
+    public ResponseEntity<UserDTO> addUser(@RequestBody UserCreateDTO userCreateDTO) {
+        if (userCreateDTO == null || userCreateDTO.getUsername() == null || userCreateDTO.getUsername().isEmpty()) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
+        // map to UserDTO without portfolio/transaction ids
+        UserDTO userDTO = new UserDTO();
+        userDTO.setUsername(userCreateDTO.getUsername());
+        userDTO.setEmail(userCreateDTO.getEmail());
+        userDTO.setPassword(userCreateDTO.getPassword());
+        userDTO.setCreatedAt(userCreateDTO.getCreatedAt());
 
         UserDTO savedUser = userService.addUser(userDTO);
         return new ResponseEntity<>(savedUser, HttpStatus.CREATED);

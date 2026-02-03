@@ -68,23 +68,19 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public UserDTO getUser(Integer user_id) {
-        User user = userRepo.findById(user_id).isPresent() ? userRepo.findById(user_id).get() : null;
-        assert user != null;
-        return getUserDTO(user);
+        return userRepo.findById(user_id).map(this::getUserDTO).orElse(null);
     }
 
     @Override
     public UserDTO updateUser(Integer user_id, UserDTO userDTO) {
-        User user = userRepo.findById(user_id).isPresent() ? userRepo.findById(user_id).get() : null;
-        assert user != null;
-        return getUserDTO(userDTO, user);
+        return userRepo.findById(user_id).map(user -> getUserDTO(userDTO, user)).orElse(null);
     }
 
     @Override
     public String deleteUser(Integer user_id) {
-        User user = userRepo.findById(user_id).isPresent() ? userRepo.findById(user_id).get() : null;
-        assert user != null;
-        userRepo.delete(user);
-        return "User deleted successfully";
+        return userRepo.findById(user_id).map(user -> {
+            userRepo.delete(user);
+            return "User deleted successfully";
+        }).orElse(null);
     }
 }
