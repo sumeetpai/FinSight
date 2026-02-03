@@ -1,5 +1,4 @@
 package com.FinSight_Backend.dto;
-import com.FinSight_Backend.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,5 +18,5 @@ public class TransactionDTO {
     private Integer qty;
     private Long price;
     private Timestamp timestamp_t;
-    private List<User> users;
+    private List<Integer> user_ids;
 }

@@ -3,14 +3,23 @@ package com.FinSight_Backend.service;
 import com.FinSight_Backend.dto.PortfolioDTO;
 import com.FinSight_Backend.model.Portfolio;
 import com.FinSight_Backend.repository.PortfolioRepo;
+import com.FinSight_Backend.repository.UserRepo;
+import com.FinSight_Backend.repository.StocksRepo;
+import com.FinSight_Backend.model.User;
+import com.FinSight_Backend.model.Stocks;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 public class PortfolioServiceImpl implements PortfolioService {
 
     private PortfolioRepo portfolioRepo;
+    private UserRepo userRepo;
+    private StocksRepo stocksRepo;
     @Override
     public PortfolioDTO addPortfolio(PortfolioDTO portfolioDTO) {
         Portfolio portfolio = new Portfolio();
@@ -25,8 +34,9 @@ public class PortfolioServiceImpl implements PortfolioService {
         portfolioDTO.setCurrent_price(portfolio.getCurrent_price());
         portfolioDTO.setCost_basis(portfolio.getCost_basis());
         portfolioDTO.setYield(portfolio.getYield());
-        portfolioDTO.setUser(portfolio.getUser());
-        portfolioDTO.setStocks(portfolio.getStocks());
+        portfolioDTO.setUser_id(portfolio.getUser() != null ? portfolio.getUser().getUser_id() : null);
+        portfolioDTO.setStock_ids(portfolio.getStocks() != null ?
+                portfolio.getStocks().stream().map(Stocks::getStock_id).collect(Collectors.toList()) : null);
         return portfolioDTO;
     }
 
@@ -36,8 +46,21 @@ public class PortfolioServiceImpl implements PortfolioService {
         portfolio.setCurrent_price(portfolioDTO.getCurrent_price());
         portfolio.setCost_basis(portfolioDTO.getCost_basis());
         portfolio.setYield(portfolioDTO.getYield());
-        portfolio.setUser(portfolioDTO.getUser());
-        portfolio.setStocks(portfolioDTO.getStocks());
+        if (portfolioDTO.getUser_id() != null) {
+            User u = userRepo.findById(portfolioDTO.getUser_id()).orElse(null);
+            portfolio.setUser(u);
+        } else {
+            portfolio.setUser(null);
+        }
+        if (portfolioDTO.getStock_ids() != null) {
+            List<Stocks> stocks = portfolioDTO.getStock_ids().stream()
+                    .map(id -> stocksRepo.findById(id).orElse(null))
+                    .filter(s -> s != null)
+                    .collect(Collectors.toList());
+            portfolio.setStocks(stocks);
+        } else {
+            portfolio.setStocks(null);
+        }
         Portfolio savedPortfolio = portfolioRepo.save(portfolio);
         return getPortfolioDTO(savedPortfolio);
     }

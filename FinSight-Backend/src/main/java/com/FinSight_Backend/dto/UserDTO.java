@@ -1,12 +1,11 @@
 package com.FinSight_Backend.dto;
-import com.FinSight_Backend.model.Portfolio;
-import com.FinSight_Backend.model.Transaction;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 @Getter
 @Setter
@@ -18,6 +17,6 @@ public class UserDTO {
     private String email;
     private String password;
     private Timestamp createdAt;
-    private Portfolio portfolio;
-    private Transaction transaction;
+    private List<Integer> portfolio_ids;
+    private Integer transaction_id;
 }

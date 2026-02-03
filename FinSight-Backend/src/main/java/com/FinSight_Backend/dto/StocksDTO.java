@@ -1,6 +1,4 @@
-package com.stport.spm.DTOClasses;
-
-import com.FinSight_Backend.model.Portfolio;
+package com.FinSight_Backend.dto;
 import lombok.*;
 
 import java.util.List;
@@ -16,5 +14,5 @@ public class StocksDTO {
     private Integer day_before_price;
     private Long market_cap;
     private Integer current_price;
-    private List<Portfolio> portfolios;
+    private List<Integer> portfolio_ids;
 }

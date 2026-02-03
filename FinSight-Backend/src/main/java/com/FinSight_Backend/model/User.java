@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 @Entity
 @Table(name = "user")
@@ -16,8 +17,8 @@ public class User {
     private String email;
     private String password;
     private Timestamp createdAt;
-    @ManyToOne
-    private Portfolio portfolio;
+    @OneToMany(mappedBy = "user")
+    private List<Portfolio> portfolios;
     @ManyToOne
     private Transaction transaction;
 }

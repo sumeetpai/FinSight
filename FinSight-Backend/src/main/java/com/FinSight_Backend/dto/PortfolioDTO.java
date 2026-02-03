@@ -1,6 +1,4 @@
 package com.FinSight_Backend.dto;
-import com.FinSight_Backend.model.Stocks;
-import com.FinSight_Backend.model.User;
 import lombok.*;
 
 import java.util.List;
@@ -17,7 +15,7 @@ public class PortfolioDTO {
     private Long current_price;
     private Long cost_basis;
     private Integer yield;
-    private List<User> user;
-    private List<Stocks> stocks;
+    private Integer user_id;
+    private List<Integer> stock_ids;
 
 }

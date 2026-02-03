@@ -1,6 +1,6 @@
 package com.FinSight_Backend.service;
 
-import com.FinSight_BAckend.dto.UserDTO;
+import com.FinSight_Backend.dto.UserDTO;
 
 public interface UserService {
     UserDTO addUser(UserDTO userDTO);

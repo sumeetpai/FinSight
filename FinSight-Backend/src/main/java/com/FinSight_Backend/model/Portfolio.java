@@ -17,8 +17,8 @@ public class Portfolio {
     private Long current_price;
     private Long cost_basis;
     private Integer yield;
-    @OneToMany(mappedBy = "portfolio")
-    private List<User> user;
+    @ManyToOne
+    private User user;
     @ManyToMany(mappedBy = "portfolio")
     private List<Stocks> stocks;
 
