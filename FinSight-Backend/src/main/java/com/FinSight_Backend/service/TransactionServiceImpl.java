@@ -1,7 +1,7 @@
 package com.FinSight_Backend.service;
 
 import com.FinSight_Backend.dto.TransactionDTO;
-import com.FinSight_Backend.repo.TransactionRepo;
+import com.FinSight_Backend.repository.TransactionRepo;
 import com.FinSight_Backend.model.Transaction;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
