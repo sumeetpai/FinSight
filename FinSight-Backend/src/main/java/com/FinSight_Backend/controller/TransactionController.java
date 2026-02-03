@@ -14,8 +14,9 @@ public class TransactionController {
 
     @PostMapping()
     public ResponseEntity<TransactionDTO> addTransaction(@RequestBody TransactionDTO transactionDTO) {
-        // For creation, t_id should be null. Validate required fields like stock_sym and qty
-        if (transactionDTO == null || transactionDTO.getStock_sym() == null || transactionDTO.getStock_sym().isEmpty()) {
+        // For creation, require stock_id, portfolio_id, user_id, and type
+        if (transactionDTO == null || transactionDTO.getStock_id() == null || transactionDTO.getPortfolio_id() == null
+                || transactionDTO.getUser_id() == null || transactionDTO.getType() == null || transactionDTO.getType().isEmpty()) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         TransactionDTO savedTransaction = transactionService.addTransaction(transactionDTO);

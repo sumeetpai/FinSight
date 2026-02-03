@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.sql.Timestamp;
-import java.util.List;
 
 @Entity
 @Table(name = "transaction")
@@ -14,11 +13,11 @@ public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer t_id;
-    private String stock_sym;
-    private String type;
+    private Integer stock_id;
+    private Integer portfolio_id;
+    private Integer user_id;
+    private String type; // ADD or REMOVE
     private Integer qty;
     private Long price;
     private Timestamp timestamp_t;
-    @OneToMany(mappedBy = "transaction")
-    private List<User> users;
 }

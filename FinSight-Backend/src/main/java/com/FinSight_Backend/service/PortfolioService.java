@@ -7,4 +7,6 @@ public interface PortfolioService {
     PortfolioDTO getPortfolio(Integer portfolio_id);
     PortfolioDTO updatePortfolio(Integer portfolio_id, PortfolioDTO portfolioDTO);
     String deletePortfolio(Integer portfolio_id);
+    PortfolioDTO addStockToPortfolio(Integer portfolio_id, Integer stock_id, Integer user_id);
+    PortfolioDTO removeStockFromPortfolio(Integer portfolio_id, Integer stock_id, Integer user_id);
 }

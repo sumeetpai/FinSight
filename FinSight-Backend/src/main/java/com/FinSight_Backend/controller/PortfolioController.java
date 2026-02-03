@@ -1,10 +1,13 @@
 package com.FinSight_Backend.controller;
+
 import com.FinSight_Backend.dto.PortfolioDTO;
+import com.FinSight_Backend.dto.AddStockRequestDTO;
 import com.FinSight_Backend.service.PortfolioService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequestMapping("api/v1/portfolio/")
@@ -14,11 +17,15 @@ public class PortfolioController {
 
     @PostMapping()
     public ResponseEntity<PortfolioDTO> addPortfolio(@RequestBody PortfolioDTO portfolioDTO) {
-        // For creation, portfolio_id should be null; require owning user_id and at least one stock or shares
-        if (portfolioDTO == null || portfolioDTO.getUser_id() == null) {
+        // For creation, require owning user_id
+        if (portfolioDTO == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         PortfolioDTO savedPortfolio = portfolioService.addPortfolio(portfolioDTO);
+        if (savedPortfolio == null) {
+            // user does not exist or other validation failed
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
         return new ResponseEntity<>(savedPortfolio, HttpStatus.CREATED);
     }
 
@@ -47,6 +54,29 @@ public class PortfolioController {
             return new ResponseEntity<>("Portfolio not found", HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(msg, HttpStatus.OK);
+    }
+
+    @PostMapping("{portfolio_id}/stocks")
+    public ResponseEntity<PortfolioDTO> addStockToPortfolio(@PathVariable Integer portfolio_id, @RequestBody AddStockRequestDTO req) {
+        if (req == null || req.getStock_id() == null || req.getUser_id() == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        Integer qty = req.getQty() != null ? req.getQty() : 1;
+        // currently service treats qty as 1; pass user and stock
+        PortfolioDTO updated = portfolioService.addStockToPortfolio(portfolio_id, req.getStock_id(), req.getUser_id());
+        if (updated == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(updated, HttpStatus.OK);
+    }
+
+    @DeleteMapping("{portfolio_id}/stocks/{stock_id}")
+    public ResponseEntity<PortfolioDTO> removeStockFromPortfolio(@PathVariable Integer portfolio_id, @PathVariable Integer stock_id, @RequestParam Integer user_id) {
+        PortfolioDTO updated = portfolioService.removeStockFromPortfolio(portfolio_id, stock_id, user_id);
+        if (updated == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(updated, HttpStatus.OK);
     }
 
 }

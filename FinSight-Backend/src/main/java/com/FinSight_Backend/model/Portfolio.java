@@ -12,9 +12,8 @@ public class Portfolio {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer portfolio_id;
-    private Integer shares;
-    private String stock_id;
-    private Long current_price;
+    private String name;
+    private Long total_value;
     private Long cost_basis;
     private Integer yield;
     @ManyToOne(fetch = FetchType.LAZY)
