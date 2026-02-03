@@ -14,11 +14,8 @@ public class TransactionController {
 
     @PostMapping()
     public ResponseEntity<TransactionDTO> addTransaction(@RequestBody TransactionDTO transactionDTO) {
-        try {
-            if (transactionDTO.getT_id() == null || transactionDTO.getT_id().toString().isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
-        } catch (NullPointerException e) {
+        // For creation, t_id should be null. Validate required fields like stock_sym and qty
+        if (transactionDTO == null || transactionDTO.getStock_sym() == null || transactionDTO.getStock_sym().isEmpty()) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         TransactionDTO savedTransaction = transactionService.addTransaction(transactionDTO);
@@ -28,18 +25,27 @@ public class TransactionController {
     @GetMapping("{t_id}")
     public ResponseEntity<TransactionDTO> getTransaction(@PathVariable Integer t_id) {
         TransactionDTO transactionDTO = transactionService.getTransaction(t_id);
+        if (transactionDTO == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
         return new ResponseEntity<>(transactionDTO, HttpStatus.OK);
     }
 
     @PutMapping("{t_id}")
     public ResponseEntity<TransactionDTO> updateTransaction(@PathVariable Integer t_id, @RequestBody TransactionDTO transactionDTO) {
         TransactionDTO updatedTransaction = transactionService.updateTransaction(t_id, transactionDTO);
+        if (updatedTransaction == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
         return new ResponseEntity<>(updatedTransaction, HttpStatus.OK);
     }
 
     @DeleteMapping("{t_id}")
     public ResponseEntity<String> deleteTransaction(@PathVariable Integer t_id) {
         String msg = transactionService.deleteTransaction(t_id);
+        if (msg == null) {
+            return new ResponseEntity<>("Transaction not found", HttpStatus.NOT_FOUND);
+        }
         return new ResponseEntity<>(msg, HttpStatus.OK);
     }
 

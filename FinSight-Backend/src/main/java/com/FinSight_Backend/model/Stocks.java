@@ -17,6 +17,6 @@ public class Stocks {
     private Integer day_before_price;
     private Long market_cap;
     private Integer current_price;
-    @ManyToMany
+    @ManyToMany(mappedBy = "stocks")
     private List<Portfolio> portfolio;
 }

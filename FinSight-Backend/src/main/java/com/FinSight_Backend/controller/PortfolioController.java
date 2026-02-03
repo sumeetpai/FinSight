@@ -14,11 +14,8 @@ public class PortfolioController {
 
     @PostMapping()
     public ResponseEntity<PortfolioDTO> addPortfolio(@RequestBody PortfolioDTO portfolioDTO) {
-        try {
-            if (portfolioDTO.getPortfolio_id() == null || portfolioDTO.getPortfolio_id().toString().isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
-        } catch (NullPointerException e) {
+        // For creation, portfolio_id should be null; require owning user_id and at least one stock or shares
+        if (portfolioDTO == null || portfolioDTO.getUser_id() == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         PortfolioDTO savedPortfolio = portfolioService.addPortfolio(portfolioDTO);
@@ -28,18 +25,27 @@ public class PortfolioController {
     @GetMapping("{portfolio_id}")
     public ResponseEntity<PortfolioDTO> getPortfolio(@PathVariable Integer portfolio_id) {
         PortfolioDTO portfolioDTO = portfolioService.getPortfolio(portfolio_id);
+        if (portfolioDTO == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
         return new ResponseEntity<>(portfolioDTO, HttpStatus.OK);
     }
 
     @PutMapping("{portfolio_id}")
     public ResponseEntity<PortfolioDTO> updatePortfolio(@PathVariable Integer portfolio_id, @RequestBody PortfolioDTO portfolioDTO) {
         PortfolioDTO updatedPortfolio = portfolioService.updatePortfolio(portfolio_id, portfolioDTO);
+        if (updatedPortfolio == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
         return new ResponseEntity<>(updatedPortfolio, HttpStatus.OK);
     }
 
     @DeleteMapping("{portfolio_id}")
     public ResponseEntity<String> deletePortfolio(@PathVariable Integer portfolio_id) {
         String msg = portfolioService.deletePortfolio(portfolio_id);
+        if (msg == null) {
+            return new ResponseEntity<>("Portfolio not found", HttpStatus.NOT_FOUND);
+        }
         return new ResponseEntity<>(msg, HttpStatus.OK);
     }
 

@@ -17,8 +17,8 @@ public class User {
     private String email;
     private String password;
     private Timestamp createdAt;
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Portfolio> portfolios;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Transaction transaction;
 }

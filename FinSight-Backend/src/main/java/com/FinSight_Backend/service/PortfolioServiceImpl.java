@@ -58,6 +58,15 @@ public class PortfolioServiceImpl implements PortfolioService {
                     .filter(s -> s != null)
                     .collect(Collectors.toList());
             portfolio.setStocks(stocks);
+            // keep both sides in sync
+            for (Stocks s : stocks) {
+                if (s.getPortfolio() == null) {
+                    s.setPortfolio(new java.util.ArrayList<>());
+                }
+                if (!s.getPortfolio().contains(portfolio)) {
+                    s.getPortfolio().add(portfolio);
+                }
+            }
         } else {
             portfolio.setStocks(null);
         }

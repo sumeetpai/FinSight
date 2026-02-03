@@ -17,7 +17,7 @@ public class UserController {
     // -------------------- CREATE USER --------------------
     @PostMapping
     public ResponseEntity<UserDTO> addUser(@RequestBody UserDTO userDTO) {
-        if (userDTO == null) {
+        if (userDTO == null || userDTO.getUsername() == null || userDTO.getUsername().isEmpty()) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 

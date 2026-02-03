@@ -37,6 +37,8 @@ public class UserServiceImpl implements UserService{
                     .map(id -> portfolioRepo.findById(id).orElse(null))
                     .filter(p -> p != null)
                     .collect(Collectors.toList());
+            // ensure owning side is set
+            portfolios.forEach(p -> p.setUser(user));
             user.setPortfolios(portfolios);
         } else {
             user.setPortfolios(null);

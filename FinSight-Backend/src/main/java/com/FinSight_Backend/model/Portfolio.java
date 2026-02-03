@@ -17,9 +17,15 @@ public class Portfolio {
     private Long current_price;
     private Long cost_basis;
     private Integer yield;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     private User user;
-    @ManyToMany(mappedBy = "portfolio")
+    @ManyToMany
+    @JoinTable(
+            name = "portfolio_stocks",
+            joinColumns = @JoinColumn(name = "portfolio_id"),
+            inverseJoinColumns = @JoinColumn(name = "stock_id")
+    )
     private List<Stocks> stocks;
 
 }
