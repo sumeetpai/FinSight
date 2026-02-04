@@ -56,11 +56,12 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     private PortfolioDTO getPortfolioDTO(PortfolioDTO portfolioDTO, Portfolio portfolio) {
-        portfolio.setName(portfolioDTO.getName());
-        portfolio.setDescription(portfolioDTO.getDescription());
-        portfolio.setTotal_value(portfolioDTO.getTotal_value());
-        portfolio.setCost_basis(portfolioDTO.getCost_basis());
-        portfolio.setYield(portfolioDTO.getYield());
+        // only update fields if provided (non-null) to avoid wiping existing values
+        if (portfolioDTO.getName() != null) portfolio.setName(portfolioDTO.getName());
+        if (portfolioDTO.getDescription() != null) portfolio.setDescription(portfolioDTO.getDescription());
+        if (portfolioDTO.getTotal_value() != null) portfolio.setTotal_value(portfolioDTO.getTotal_value());
+        if (portfolioDTO.getCost_basis() != null) portfolio.setCost_basis(portfolioDTO.getCost_basis());
+        if (portfolioDTO.getYield() != null) portfolio.setYield(portfolioDTO.getYield());
         if (portfolioDTO.getUser_id() != null) {
             User u = userRepo.findById(portfolioDTO.getUser_id()).orElse(null);
             portfolio.setUser(u);
@@ -145,8 +146,13 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     @Override
     public String deletePortfolio(Integer portfolio_id) {
-        Portfolio portfolio = portfolioRepo.findById(portfolio_id).isPresent() ? portfolioRepo.findById(portfolio_id).get() : null;
-        assert portfolio != null;
+        Portfolio portfolio = portfolioRepo.findById(portfolio_id).orElse(null);
+        if (portfolio == null) return null;
+        // delete dependent portfolio_stock rows
+        portfolioStockRepo.findByPortfolioId(portfolio_id).forEach(ps -> portfolioStockRepo.delete(ps));
+        // delete transactions linked to this portfolio to avoid FK constraint
+        transactionRepo.deleteByPortfolioId(portfolio_id);
+        // finally delete portfolio
         portfolioRepo.delete(portfolio);
         return "Portfolio deleted";
     }
