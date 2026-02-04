@@ -6,6 +6,16 @@ import { PortfolioVisualization } from './PortfolioVisualization.jsx';
 
 export function Dashboard({ onGoHome }) {
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handlePortfolioUpdate = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleBackToList = () => {
+    setSelectedPortfolio(null);
+    handlePortfolioUpdate(); // Refresh the list when coming back
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -20,10 +30,14 @@ export function Dashboard({ onGoHome }) {
           {selectedPortfolio ? (
             <PortfolioDetails
               portfolio={selectedPortfolio}
-              onBack={() => setSelectedPortfolio(null)}
+              onBack={handleBackToList}
+              onPortfolioUpdate={handlePortfolioUpdate}
             />
           ) : (
-            <PortfolioList onSelectPortfolio={setSelectedPortfolio} />
+            <PortfolioList 
+              onSelectPortfolio={setSelectedPortfolio} 
+              refreshTrigger={refreshTrigger}
+            />
           )}
         </div>
 
@@ -34,7 +48,7 @@ export function Dashboard({ onGoHome }) {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio Analytics</h1>
               <p className="text-gray-600">Comprehensive overview of all your portfolios</p>
             </div>
-            <PortfolioVisualization />
+            <PortfolioVisualization refreshTrigger={refreshTrigger} />
           </div>
         </div>
       </main>
