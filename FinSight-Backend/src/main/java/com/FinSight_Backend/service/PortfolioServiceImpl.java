@@ -233,10 +233,10 @@ public class PortfolioServiceImpl implements PortfolioService {
             ps.setQuantity(addedQty);
             portfolioStockRepo.save(ps);
         }
-        // recompute total_value = sum(stock.current_price * qty)
-        List<PortfolioStock> entries = portfolioStockRepo.findByPortfolioId(portfolio_id);
-        long total = entries.stream().mapToLong(e -> (e.getStock().getCurrent_price() != null ? e.getStock().getCurrent_price() : 0) * (e.getQuantity() != null ? e.getQuantity() : 0)).sum();
-        portfolio.setTotal_value(total);
+        // update cost_basis by adding the cost of the added shares (current_price * qty)
+        long addedCost = (stock.getCurrent_price() != null ? stock.getCurrent_price().longValue() : 0L) * (long) addedQty;
+        Long existingCost = portfolio.getCost_basis() != null ? portfolio.getCost_basis() : 0L;
+        portfolio.setCost_basis(existingCost + addedCost);
         Portfolio saved = portfolioRepo.save(portfolio);
         // record transaction
         Transaction tx = new Transaction();
