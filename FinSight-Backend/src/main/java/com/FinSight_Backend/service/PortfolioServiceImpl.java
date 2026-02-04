@@ -95,6 +95,18 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
+    public List<PortfolioDTO> getAllPortfolios() {
+        List<Portfolio> portfolios = portfolioRepo.findAll();
+        return portfolios.stream().map(this::getPortfolioDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PortfolioDTO> getPortfoliosByUser(Integer user_id) {
+        List<Portfolio> portfolios = portfolioRepo.findByUserId(user_id);
+        return portfolios.stream().map(this::getPortfolioDTO).collect(Collectors.toList());
+    }
+
+    @Override
     public PortfolioDTO updatePortfolio(Integer portfolio_id, PortfolioDTO portfolioDTO) {
         Portfolio portfolio = portfolioRepo.findById(portfolio_id).isPresent() ? portfolioRepo.findById(portfolio_id).get() : null;
         if (portfolio == null) {

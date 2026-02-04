@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 
 @RestController
@@ -55,6 +56,23 @@ public class PortfolioController {
             return new ResponseEntity<>("Portfolio not found", HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(msg, HttpStatus.OK);
+    }
+
+    // -------------------- GET ALL PORTFOLIOS --------------------
+    @GetMapping
+    public ResponseEntity<List<PortfolioDTO>> getAllPortfolios() {
+        List<PortfolioDTO> list = portfolioService.getAllPortfolios();
+        return new ResponseEntity<>(list, HttpStatus.OK);
+    }
+
+    // -------------------- GET PORTFOLIOS BY USER --------------------
+    @GetMapping("user/{user_id}")
+    public ResponseEntity<List<PortfolioDTO>> getPortfoliosByUser(@PathVariable Integer user_id) {
+        List<PortfolioDTO> list = portfolioService.getPortfoliosByUser(user_id);
+        if (list == null || list.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(list, HttpStatus.OK);
     }
 
     @PostMapping("{portfolio_id}/stocks")
