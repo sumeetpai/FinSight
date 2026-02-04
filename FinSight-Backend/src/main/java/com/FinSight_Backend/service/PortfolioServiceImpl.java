@@ -68,22 +68,44 @@ public class PortfolioServiceImpl implements PortfolioService {
             portfolio.setUser(null);
         }
         if (portfolioDTO.getStock_entries() != null) {
-            // convert entries to PortfolioStock list
-            List<PortfolioStock> entries = portfolioDTO.getStock_entries().stream()
-                    .map(entry -> {
-                        Stocks s = stocksRepo.findById(entry.getStock_id()).orElse(null);
-                        if (s == null) return null;
-                        PortfolioStock ps = new PortfolioStock();
-                        ps.setPortfolio(portfolio);
-                        ps.setStock(s);
-                        ps.setQuantity(entry.getQuantity() != null ? entry.getQuantity() : 1);
-                        return ps;
-                    })
-                    .filter(ps -> ps != null)
-                    .collect(Collectors.toList());
-            portfolio.setPortfolioStocks(entries);
+            // Merge incoming entries into existing PortfolioStock collection to avoid replacing the managed collection
+            List<com.FinSight_Backend.dto.StockEntryDTO> incoming = portfolioDTO.getStock_entries();
+            // build a map of incoming entries (stockId -> qty)
+            java.util.Map<Integer, Integer> incomingMap = incoming.stream()
+                    .filter(e -> e.getStock_id() != null)
+                    .collect(Collectors.toMap(e -> e.getStock_id(), e -> e.getQuantity() != null ? e.getQuantity() : 1, (a, b) -> b));
+
+            // ensure portfolio has an initialized collection
+            if (portfolio.getPortfolioStocks() == null) {
+                portfolio.setPortfolioStocks(new java.util.ArrayList<>());
+            }
+
+            // update existing entries or add new ones
+            for (java.util.Map.Entry<Integer, Integer> e : incomingMap.entrySet()) {
+                Integer stockId = e.getKey();
+                Integer qty = e.getValue();
+                Stocks s = stocksRepo.findById(stockId).orElse(null);
+                if (s == null) continue; // skip non-existing stocks
+
+                PortfolioStock existingPs = portfolio.getPortfolioStocks().stream()
+                        .filter(ps -> ps.getStock() != null && ps.getStock().getStock_id().equals(stockId))
+                        .findFirst().orElse(null);
+
+                if (existingPs != null) {
+                    existingPs.setQuantity(qty);
+                } else {
+                    PortfolioStock psNew = new PortfolioStock();
+                    psNew.setPortfolio(portfolio);
+                    psNew.setStock(s);
+                    psNew.setQuantity(qty);
+                    portfolio.getPortfolioStocks().add(psNew);
+                }
+            }
+
+            // remove any existing PortfolioStock entries that are not present in incomingMap
+            portfolio.getPortfolioStocks().removeIf(ps -> ps.getStock() == null || !incomingMap.containsKey(ps.getStock().getStock_id()));
         } else {
-            portfolio.setPortfolioStocks(null);
+            // If the client did not include stock_entries in the DTO, do not modify the existing portfolioStocks collection.
         }
         Portfolio savedPortfolio = portfolioRepo.save(portfolio);
         return getPortfolioDTO(savedPortfolio);
