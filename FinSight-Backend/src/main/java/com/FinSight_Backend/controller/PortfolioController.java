@@ -75,6 +75,22 @@ public class PortfolioController {
         return new ResponseEntity<>(list, HttpStatus.OK);
     }
 
+    // Diagnostic endpoint: counts of possible child rows that reference the portfolio
+    @GetMapping("{portfolio_id}/children-counts")
+    public ResponseEntity<java.util.Map<String, Long>> getChildRowCounts(@PathVariable Integer portfolio_id) {
+        java.util.Map<String, Long> counts = portfolioService.getChildRowCounts(portfolio_id);
+        if (counts == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(counts, HttpStatus.OK);
+    }
+
+    @PutMapping("{portfolio_id}/status")
+    public ResponseEntity<PortfolioDTO> setPortfolioStatus(@PathVariable Integer portfolio_id, @RequestBody com.FinSight_Backend.dto.PortfolioStatusDTO statusDTO) {
+        if (statusDTO == null || statusDTO.getActive() == null) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        PortfolioDTO updated = portfolioService.setPortfolioActiveStatus(portfolio_id, statusDTO.getActive());
+        if (updated == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(updated, HttpStatus.OK);
+    }
+
     @PostMapping("{portfolio_id}/stocks")
     public ResponseEntity<PortfolioDTO> addStockToPortfolio(@PathVariable Integer portfolio_id, @RequestBody AddStockRequestDTO req) {
         if (req == null || req.getStock_id() == null || req.getUser_id() == null) {

@@ -23,4 +23,26 @@ public interface PortfolioStockRepo extends JpaRepository<PortfolioStock, Long> 
     @Transactional
     @Query("DELETE FROM PortfolioStock ps WHERE ps.stock.stock_id = :stockId")
     void deleteByStockId(@Param("stockId") Integer stockId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM PortfolioStock ps WHERE ps.portfolio.portfolio_id = :portfolioId")
+    void deleteByPortfolioId(@Param("portfolioId") Integer portfolioId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM portfolio_stocks WHERE portfolio_portfolio_id = :portfolioId", nativeQuery = true)
+    void deleteLegacyByPortfolioId(@Param("portfolioId") Integer portfolioId);
+
+    // Combined native delete: handles either column name that might exist in legacy dumps
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM portfolio_stocks WHERE portfolio_portfolio_id = :portfolioId OR portfolio_id = :portfolioId", nativeQuery = true)
+    void deleteLegacyByPortfolioIdCombined(@Param("portfolioId") Integer portfolioId);
+
+    // native delete for singular entity table naming variations
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM portfolio_stock WHERE portfolio_id = :portfolioId OR portfolio_portfolio_id = :portfolioId", nativeQuery = true)
+    void deleteNativePortfolioStockByPortfolioIdCombined(@Param("portfolioId") Integer portfolioId);
 }
