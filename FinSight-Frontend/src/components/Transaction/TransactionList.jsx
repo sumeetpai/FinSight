@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, ArrowUpCircle, ArrowDownCircle, Calendar } from 'lucide-react';
 import { transactionService } from '../../services/transactionService.js';
 import { AddTransactionModal } from './AddTransactionModal.jsx';
@@ -8,11 +8,7 @@ export function TransactionList({ portfolioId, onUpdate }) {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  useEffect(() => {
-    loadTransactions();
-  }, [portfolioId]);
-
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     try {
       setLoading(true);
       const data = await transactionService.getByPortfolio(portfolioId);
@@ -22,7 +18,11 @@ export function TransactionList({ portfolioId, onUpdate }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [portfolioId]);
+
+  useEffect(() => {
+    loadTransactions();
+  }, [loadTransactions]);
 
   const handleTransactionAdded = () => {
     setShowAddModal(false);

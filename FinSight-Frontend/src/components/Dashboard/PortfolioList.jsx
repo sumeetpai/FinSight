@@ -1,25 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Plus, Folder, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext.jsx';
 import { portfolioService } from '../../services/portfolioService.js';
 import { CreatePortfolioModal } from './CreatePortfolioModal.jsx';
 import { PortfolioCard } from './PortfolioCard.jsx';
 
 export function PortfolioList({ onSelectPortfolio }) {
-  const { user } = useAuth();
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     loadPortfolios();
-  }, [user]);
+  }, []);
 
   const loadPortfolios = async () => {
-    if (!user) return;
     try {
       setLoading(true);
-      const data = await portfolioService.getAll(user.id);
+      const data = await portfolioService.getAll();
       const detailedPortfolios = await Promise.all(
         data.map(p => portfolioService.getById(p.id))
       );
@@ -32,10 +29,8 @@ export function PortfolioList({ onSelectPortfolio }) {
   };
 
   const handleCreatePortfolio = async (name, description) => {
-    if (!user) return;
     try {
       await portfolioService.create({
-        user_id: user.id,
         name,
         description
       });

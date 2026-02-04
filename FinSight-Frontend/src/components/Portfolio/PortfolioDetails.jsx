@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, Plus, TrendingUp, TrendingDown } from 'lucide-react';
 import { portfolioService } from '../../services/portfolioService.js';
 import { HoldingsList } from './HoldingsList.jsx';
