@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Plus, TrendingUp, TrendingDown, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { HoldingsList } from './HoldingsList.jsx';
 import { AddStockModal } from './AddStockModal.jsx';
 import { TransactionList } from '../Transaction/TransactionList.jsx';
@@ -10,6 +10,11 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
   const [error, setError] = useState(null);
   const [showAddStock, setShowAddStock] = useState(false);
   const [activeTab, setActiveTab] = useState('holdings');
+  const [showMenu, setShowMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   const fetchPortfolio = async (portfolioId) => {
     setLoading(true);
@@ -91,6 +96,81 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
     fetchPortfolio(initialPortfolio.id);
   }, [initialPortfolio.id]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMenu && !event.target.closest('.menu-container')) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMenu]);
+
+  const handleEditPortfolio = () => {
+    setEditName(portfolio.name);
+    setEditDescription(portfolio.description || '');
+    setShowMenu(false);
+    setShowEditModal(true);
+  };
+
+  const handleUpdatePortfolio = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:8080/api/v1/portfolio/${portfolio.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editName,
+          description: editDescription,
+          user_id: portfolio.user_id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh portfolio data
+      await fetchPortfolio(portfolio.id);
+      setShowEditModal(false);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error updating portfolio:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePortfolio = () => {
+    setShowMenu(false);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeletePortfolio = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:8080/api/v1/portfolio/${portfolio.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Navigate back to dashboard
+      onBack();
+    } catch (err) {
+      setError(err.message);
+      console.error('Error deleting portfolio:', err);
+      setShowDeleteConfirm(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const calculatePortfolioValue = () => {
     if (!portfolio.holdings) return 0;
     return portfolio.holdings.reduce((sum, holding) => {
@@ -160,6 +240,32 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
           <h2 className="text-2xl font-bold text-gray-900">{portfolio.name}</h2>
           {portfolio.description && (
             <p className="text-gray-600 mt-1">{portfolio.description}</p>
+          )}
+        </div>
+        <div className="relative menu-container">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <MoreVertical className="w-6 h-6 text-gray-600" />
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+              <button
+                onClick={handleEditPortfolio}
+                className="flex items-center gap-2 w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-t-lg"
+              >
+                <Edit className="w-4 h-4 text-gray-600" />
+                <span className="text-gray-700">Edit Portfolio</span>
+              </button>
+              <button
+                onClick={handleDeletePortfolio}
+                className="flex items-center gap-2 w-full px-4 py-3 text-left hover:bg-red-50 transition-colors rounded-b-lg text-red-600"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Portfolio</span>
+              </button>
+            </div>
           )}
         </div>
         <button
@@ -256,6 +362,101 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
             refreshPortfolio();
           }}
         />
+      )}
+
+      {/* Edit Portfolio Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Edit Portfolio</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); handleUpdatePortfolio(); }} className="space-y-4">
+              <div>
+                <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Portfolio Name
+                </label>
+                <input
+                  id="edit-name"
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="edit-description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description (Optional)
+                </label>
+                <textarea
+                  id="edit-description"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Updating...' : 'Update Portfolio'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Portfolio</h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete "{portfolio.name}"? This action cannot be undone and will permanently remove all associated data.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeletePortfolio}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Deleting...' : 'Delete Portfolio'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
