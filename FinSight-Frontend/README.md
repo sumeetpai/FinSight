@@ -59,52 +59,53 @@ src/
 │   ├── Portfolio/      # Portfolio-related components
 │   ├── Stock/          # Stock management components
 │   └── Transaction/    # Transaction components
-├── lib/
-│   └── mockData.js     # Mock data for development
 ├── services/           # API service layer
 └── App.jsx            # Main application with routing
 ```
 
 ## Data Layer
 
-Currently using mock data stored in `src/lib/mockData.js`. The application is designed to easily switch to a real API backend.
+The application connects to a Spring Boot backend API for all data operations. The frontend includes service layers that handle API communication with proper error handling and user feedback.
 
-### Mock Data Includes:
-- Sample stocks (AAPL, GOOGL, MSFT, TSLA, AMZN)
-- Sample portfolios with holdings
-- Sample transaction history
+### API Services:
+- `portfolioApi.js` - Portfolio CRUD operations
+- `stockApi.js` - Stock data and search
+- `transactionApi.js` - Transaction management
 
 ## Backend Integration
 
-The application is designed to work with a Spring Boot backend API. When your backend is ready:
+The application connects to a Spring Boot backend API running on `http://localhost:8080`. The API services expect these endpoints:
 
-1. Update the API endpoints in the service files
-2. Replace mock data calls with actual HTTP requests
-3. Update the `.env` file with your API base URL
-
-Example API structure expected:
+### Portfolio Endpoints:
 ```
-GET    /api/portfolios
-POST   /api/portfolios
-GET    /api/portfolios/{id}
-PUT    /api/portfolios/{id}
-DELETE /api/portfolios/{id}
+GET    /api/v1/portfolio/           # Get all portfolios
+POST   /api/v1/portfolio/           # Create portfolio
+GET    /api/v1/portfolio/{id}       # Get portfolio details (not implemented)
+PUT    /api/v1/portfolio/{id}       # Update portfolio
+PUT    /api/v1/portfolio/{id}/status # Soft delete (set active: false)
+```
 
-GET    /api/stocks
-POST   /api/stocks
-GET    /api/stocks/{symbol}
+### Stock Endpoints:
+```
+GET    /api/v1/stocks/              # Get all stocks
+GET    /api/v1/stocks/{id}          # Get stock by ID
+POST   /api/v1/stocks/              # Create stock
+```
 
-GET    /api/transactions/portfolio/{portfolioId}
-POST   /api/transactions
-DELETE /api/transactions/{id}
+### Transaction Endpoints:
+```
+GET    /api/v1/transactions/portfolio/{portfolioId}  # Get transactions for portfolio
+POST   /api/v1/transactions/        # Create transaction
+PUT    /api/v1/transactions/{id}    # Update transaction
+DELETE /api/v1/transactions/{id}    # Delete transaction
 ```
 
 ## Development Notes
 
-- All data operations include artificial delays to simulate network requests
-- The application works completely offline with mock data
-- No authentication required - all features are accessible immediately
-- Data persists only during the session (page refresh resets to initial mock data)
+- The application requires a running Spring Boot backend on `http://localhost:8080`
+- All API calls include proper error handling with toast notifications
+- User feedback is provided through success/error/loading toast messages
+- Data persists in the backend database
 
 ## Contributing
 

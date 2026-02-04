@@ -18,14 +18,17 @@ export function Dashboard({ onGoHome }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <Header onGoHome={onGoHome} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
          {/* Portfolio Management Section*/}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio Management</h1>
-            <p className="text-gray-600">Manage your portfolios and track individual performance</p>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 mb-8">
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold text-gray-900 mb-3">
+              Portfolio
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Management</span>
+            </h1>
+            <p className="text-xl text-gray-600">Manage your portfolios and track individual performance with real-time insights</p>
           </div>
           {selectedPortfolio ? (
             <PortfolioDetails
@@ -35,6 +38,7 @@ export function Dashboard({ onGoHome }) {
             />
           ) : (
             <PortfolioList 
+              key={refreshTrigger}
               onSelectPortfolio={setSelectedPortfolio} 
               refreshTrigger={refreshTrigger}
             />
@@ -42,14 +46,15 @@ export function Dashboard({ onGoHome }) {
         </div>
 
         {/* Portfolio Analytics Section*/}
-        <div className="mb-12 mt-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio Analytics</h1>
-              <p className="text-gray-600">Comprehensive overview of all your portfolios</p>
-            </div>
-            <PortfolioVisualization refreshTrigger={refreshTrigger} />
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-3">
+              Portfolio
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"> Analytics</span>
+            </h1>
+            <p className="text-xl text-gray-600">Comprehensive overview of all your portfolios with real-time insights</p>
           </div>
+          <PortfolioVisualization refreshTrigger={refreshTrigger} />
         </div>
       </main>
     </div>

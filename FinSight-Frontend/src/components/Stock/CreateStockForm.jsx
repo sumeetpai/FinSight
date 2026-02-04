@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { stockService } from '../../services/stockService.js';
+import { stockApi } from '../../services/stockApi.js';
 
 export function CreateStockForm({ onClose, onCreated }) {
   const [symbol, setSymbol] = useState('');
@@ -17,7 +17,7 @@ export function CreateStockForm({ onClose, onCreated }) {
     setLoading(true);
 
     try {
-      await stockService.create({
+      await stockApi.createStock({
         symbol: symbol.toUpperCase(),
         name,
         current_price: parseFloat(currentPrice),
@@ -34,27 +34,27 @@ export function CreateStockForm({ onClose, onCreated }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl w-full max-w-sm mx-4 p-6 shadow-2xl border border-white/20 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900">Create New Stock</h3>
+          <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Create New Stock</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2 bg-gray-100/80 rounded-xl hover:bg-gray-200/80 transition-all duration-200"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-red-50/80 backdrop-blur-sm border border-red-200/50 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="symbol" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="symbol" className="block text-sm font-semibold text-gray-700 mb-2">
               Stock Symbol
             </label>
             <input
@@ -63,13 +63,13 @@ export function CreateStockForm({ onClose, onCreated }) {
               value={symbol}
               onChange={(e) => setSymbol(e.target.value.toUpperCase())}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
               placeholder="e.g., AAPL"
             />
           </div>
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
               Company Name
             </label>
             <input
@@ -78,13 +78,13 @@ export function CreateStockForm({ onClose, onCreated }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
               placeholder="e.g., Apple Inc."
             />
           </div>
 
           <div>
-            <label htmlFor="currentPrice" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="currentPrice" className="block text-sm font-semibold text-gray-700 mb-2">
               Current Price
             </label>
             <input
@@ -95,13 +95,13 @@ export function CreateStockForm({ onClose, onCreated }) {
               onChange={(e) => setCurrentPrice(e.target.value)}
               required
               min="0.01"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
               placeholder="0.00"
             />
           </div>
 
           <div>
-            <label htmlFor="previousClose" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="previousClose" className="block text-sm font-semibold text-gray-700 mb-2">
               Previous Close (Optional)
             </label>
             <input
@@ -111,13 +111,13 @@ export function CreateStockForm({ onClose, onCreated }) {
               value={previousClose}
               onChange={(e) => setPreviousClose(e.target.value)}
               min="0"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
               placeholder="0.00"
             />
           </div>
 
           <div>
-            <label htmlFor="marketCap" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="marketCap" className="block text-sm font-semibold text-gray-700 mb-2">
               Market Cap (Optional)
             </label>
             <input
@@ -127,7 +127,7 @@ export function CreateStockForm({ onClose, onCreated }) {
               value={marketCap}
               onChange={(e) => setMarketCap(e.target.value)}
               min="0"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
               placeholder="0.00"
             />
           </div>
@@ -136,14 +136,14 @@ export function CreateStockForm({ onClose, onCreated }) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-medium"
             >
               {loading ? 'Creating...' : 'Create Stock'}
             </button>

@@ -322,42 +322,6 @@ export function PortfolioVisualization({ refreshTrigger }) {
           </PieChart>
         </ResponsiveContainer>
       </div>
-
-      {/* Individual Portfolio Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {portfolioMetrics.map((portfolio, index) => (
-          <div key={index} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold text-gray-800">{portfolio.name}</h4>
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                portfolio.gain >= 0
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-              }`}>
-                {portfolio.gain >= 0 ? '+' : ''}{portfolio.gainPercentage}%
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Current Value</span>
-                <span className="font-semibold text-gray-900">${portfolio.totalValue.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total Cost</span>
-                <span className="font-semibold text-gray-900">${portfolio.totalCost.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                <span className="text-gray-600">Unrealized Gain</span>
-                <span className={`font-semibold ${
-                  portfolio.gain >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {portfolio.gain >= 0 ? '+' : ''}${portfolio.gain.toLocaleString()}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
