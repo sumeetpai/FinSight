@@ -1,24 +1,33 @@
 package com.FinSight_Backend.service;
 
+import com.FinSight_Backend.client.FinnhubClient;
 import com.FinSight_Backend.dto.StocksDTO;
 import com.FinSight_Backend.model.Stocks;
 import com.FinSight_Backend.repository.StocksRepo;
 import com.FinSight_Backend.repository.PortfolioRepo;
 import com.FinSight_Backend.repository.PortfolioStockRepo;
 import com.FinSight_Backend.model.Portfolio;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class StockServiceImpl implements StockService {
 
-    private StocksRepo stocksRepo;
-    private PortfolioRepo portfolioRepo;
-    private PortfolioStockRepo portfolioStockRepo;
+    private final StocksRepo stocksRepo;
+    private final PortfolioRepo portfolioRepo;
+    private final PortfolioStockRepo portfolioStockRepo;
+    private final FinnhubClient finnhubClient;
+
+    @Value("${finnhub.enabled:true}")
+    private boolean finnhubEnabled;
+
     @Override
     public StocksDTO addStocks(StocksDTO stocksDTO) {
         Stocks stocks = new Stocks();
@@ -33,7 +42,24 @@ public class StockServiceImpl implements StockService {
         stocksDTO.setStock_sym(stocks.getStock_sym());
         stocksDTO.setDay_before_price(stocks.getDay_before_price());
         stocksDTO.setMarket_cap(stocks.getMarket_cap());
-        stocksDTO.setCurrent_price(stocks.getCurrent_price());
+        // attempt to populate current_price using Finnhub if enabled
+        if (stocks.getStock_sym() != null && !stocks.getStock_sym().isEmpty()) {
+            try {
+                Optional<BigDecimal> priceOptional = Optional.empty();
+                if (finnhubEnabled && finnhubClient != null) {
+                    priceOptional = finnhubClient.fetchLatestPrice(stocks.getStock_sym());
+                }
+                if (priceOptional.isPresent()) {
+                    stocksDTO.setCurrent_price(priceOptional.get().intValue());
+                } else {
+                    stocksDTO.setCurrent_price(stocks.getCurrent_price());
+                }
+            } catch (Exception e) {
+                stocksDTO.setCurrent_price(stocks.getCurrent_price());
+            }
+        } else {
+            stocksDTO.setCurrent_price(stocks.getCurrent_price());
+        }
         // find portfolios that include this stock via PortfolioStock
         List<com.FinSight_Backend.model.PortfolioStock> psList = portfolioStockRepo.findByStockId(stocks.getStock_id());
         stocksDTO.setPortfolio_ids(psList != null ? psList.stream().map(ps -> ps.getPortfolio().getPortfolio_id()).collect(Collectors.toList()) : null);
