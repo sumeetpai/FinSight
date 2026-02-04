@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-export function PortfolioVisualization() {
+export function PortfolioVisualization({ refreshTrigger }) {
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -86,7 +86,7 @@ export function PortfolioVisualization() {
     };
 
     fetchPortfolios();
-  }, []);
+  }, [refreshTrigger]); // Reload when refreshTrigger changes
 
   const calculatePortfolioMetrics = (portfolio) => {
     let totalValue = 0;

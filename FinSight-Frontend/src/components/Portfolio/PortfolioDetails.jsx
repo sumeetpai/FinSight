@@ -4,7 +4,7 @@ import { HoldingsList } from './HoldingsList.jsx';
 import { AddStockModal } from './AddStockModal.jsx';
 import { TransactionList } from '../Transaction/TransactionList.jsx';
 
-export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
+export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfolioUpdate }) {
   const [portfolio, setPortfolio] = useState(initialPortfolio);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -70,7 +70,7 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
       const transformedPortfolio = {
         id: portfolioData.portfolio_id,
         name: portfolioData.name,
-        description: `Portfolio ${portfolioData.portfolio_id}`,
+        description: portfolioData.description || `Portfolio ${portfolioData.portfolio_id}`,
         total_value: portfolioData.total_value, // This is cost basis
         cost_basis: portfolioData.cost_basis,
         yield: portfolioData.yield,
@@ -125,7 +125,7 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
         body: JSON.stringify({
           name: editName,
           description: editDescription,
-          user_id: portfolio.user_id,
+          user_id: 4,
         }),
       });
 
@@ -136,6 +136,10 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
       // Refresh portfolio data
       await fetchPortfolio(portfolio.id);
       setShowEditModal(false);
+      // Notify parent component to refresh portfolio list
+      if (onPortfolioUpdate) {
+        onPortfolioUpdate();
+      }
     } catch (err) {
       setError(err.message);
       console.error('Error updating portfolio:', err);
@@ -158,6 +162,11 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Notify parent component to refresh portfolio list
+      if (onPortfolioUpdate) {
+        onPortfolioUpdate();
       }
 
       // Navigate back to dashboard

@@ -3,7 +3,7 @@ import { Plus, Folder, TrendingUp, TrendingDown, DollarSign } from 'lucide-react
 import { CreatePortfolioModal } from './CreatePortfolioModal.jsx';
 import { PortfolioCard } from './PortfolioCard.jsx';
 
-export function PortfolioList({ onSelectPortfolio }) {
+export function PortfolioList({ onSelectPortfolio, refreshTrigger }) {
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,7 +11,7 @@ export function PortfolioList({ onSelectPortfolio }) {
 
   useEffect(() => {
     loadPortfolios();
-  }, []);
+  }, [refreshTrigger]); // Reload when refreshTrigger changes
 
   const loadPortfolios = async () => {
     try {
@@ -66,7 +66,7 @@ export function PortfolioList({ onSelectPortfolio }) {
             return {
               id: portfolioData.portfolio_id,
               name: portfolioData.name,
-              description: `Portfolio ${portfolioData.portfolio_id}`,
+              description: portfolioData.description || `Portfolio ${portfolioData.portfolio_id}`,
               total_value: portfolioData.total_value, // Cost basis
               cost_basis: portfolioData.cost_basis,
               yield: portfolioData.yield,
