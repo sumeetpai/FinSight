@@ -13,6 +13,7 @@ public class Portfolio {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer portfolio_id;
     private String name;
+    private String description;
     private Long total_value;
     private Long cost_basis;
     private Integer yield;

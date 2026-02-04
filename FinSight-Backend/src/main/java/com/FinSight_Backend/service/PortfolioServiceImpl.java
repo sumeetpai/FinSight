@@ -43,6 +43,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         PortfolioDTO portfolioDTO = new PortfolioDTO();
         portfolioDTO.setPortfolio_id(portfolio.getPortfolio_id());
         portfolioDTO.setName(portfolio.getName());
+        portfolioDTO.setDescription(portfolio.getDescription());
         portfolioDTO.setTotal_value(portfolio.getTotal_value());
         portfolioDTO.setCost_basis(portfolio.getCost_basis());
         portfolioDTO.setYield(portfolio.getYield());
@@ -56,6 +57,7 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     private PortfolioDTO getPortfolioDTO(PortfolioDTO portfolioDTO, Portfolio portfolio) {
         portfolio.setName(portfolioDTO.getName());
+        portfolio.setDescription(portfolioDTO.getDescription());
         portfolio.setTotal_value(portfolioDTO.getTotal_value());
         portfolio.setCost_basis(portfolioDTO.getCost_basis());
         portfolio.setYield(portfolioDTO.getYield());
