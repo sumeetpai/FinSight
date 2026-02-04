@@ -1,21 +1,95 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, TrendingUp, TrendingDown } from 'lucide-react';
-import { portfolioService } from '../../services/portfolioService.js';
 import { HoldingsList } from './HoldingsList.jsx';
 import { AddStockModal } from './AddStockModal.jsx';
 import { TransactionList } from '../Transaction/TransactionList.jsx';
 
 export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
   const [portfolio, setPortfolio] = useState(initialPortfolio);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [showAddStock, setShowAddStock] = useState(false);
   const [activeTab, setActiveTab] = useState('holdings');
 
-  const refreshPortfolio = async () => {
-    const updated = await portfolioService.getById(portfolio.id);
-    if (updated) {
-      setPortfolio(updated);
+  const fetchPortfolio = async (portfolioId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch portfolio data
+      const portfolioResponse = await fetch(`http://localhost:8080/api/v1/portfolio/`);
+      if (!portfolioResponse.ok) {
+        throw new Error(`HTTP error! status: ${portfolioResponse.status}`);
+      }
+      const portfolios = await portfolioResponse.json();
+
+      // Find the specific portfolio
+      const portfolioData = portfolios.find(p => p.portfolio_id === portfolioId);
+      if (!portfolioData) {
+        throw new Error('Portfolio not found');
+      }
+
+      // Fetch stock details for each stock entry
+      const holdingsWithStocks = await Promise.all(
+        portfolioData.stock_entries.map(async (entry) => {
+          try {
+            const stockResponse = await fetch(`http://localhost:8080/api/v1/stocks/${entry.stock_id}`);
+            if (!stockResponse.ok) {
+              console.warn(`Failed to fetch stock ${entry.stock_id}`);
+              return null;
+            }
+            const stockData = await stockResponse.json();
+
+            return {
+              id: entry.stock_id,
+              portfolio_id: portfolioId,
+              stock_id: entry.stock_id,
+              shares: entry.quantity,
+              average_cost: portfolioData.total_value / portfolioData.stock_entries.reduce((sum, e) => sum + e.quantity, 0), // Cost per share
+              stock: {
+                id: stockData.stock_id,
+                symbol: stockData.stock_sym,
+                name: stockData.name,
+                current_price: stockData.current_price,
+                previous_close: stockData.day_before_price,
+                market_cap: stockData.market_cap
+              }
+            };
+          } catch (err) {
+            console.error(`Error fetching stock ${entry.stock_id}:`, err);
+            return null;
+          }
+        })
+      );
+
+      // Filter out null entries and transform to expected format
+      const transformedPortfolio = {
+        id: portfolioData.portfolio_id,
+        name: portfolioData.name,
+        description: `Portfolio ${portfolioData.portfolio_id}`,
+        total_value: portfolioData.total_value, // This is cost basis
+        cost_basis: portfolioData.cost_basis,
+        yield: portfolioData.yield,
+        user_id: portfolioData.user_id,
+        holdings: holdingsWithStocks.filter(holding => holding !== null)
+      };
+
+      setPortfolio(transformedPortfolio);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching portfolio:', err);
+    } finally {
+      setLoading(false);
     }
   };
+
+  const refreshPortfolio = async () => {
+    await fetchPortfolio(portfolio.id);
+  };
+
+  useEffect(() => {
+    // Fetch fresh data when component mounts
+    fetchPortfolio(initialPortfolio.id);
+  }, [initialPortfolio.id]);
 
   const calculatePortfolioValue = () => {
     if (!portfolio.holdings) return 0;
@@ -23,13 +97,12 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
       const currentPrice = holding.stock?.current_price || 0;
       return sum + (holding.shares * currentPrice);
     }, 0);
+    
   };
 
   const calculatePortfolioCost = () => {
-    if (!portfolio.holdings) return 0;
-    return portfolio.holdings.reduce((sum, holding) => {
-      return sum + (holding.shares * holding.average_cost);
-    }, 0);
+    // Use the total_value from API as cost basis
+    return portfolio.total_value || 0;
   };
 
   const calculatePortfolioGain = () => {
@@ -50,6 +123,29 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack }) {
   const gain = calculatePortfolioGain();
   const gainPercent = calculatePortfolioGainPercent();
   const isPositive = gain >= 0;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-600 text-lg font-semibold mb-2">Error loading portfolio</div>
+        <div className="text-gray-600 mb-4">{error}</div>
+        <button
+          onClick={() => fetchPortfolio(portfolio.id)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

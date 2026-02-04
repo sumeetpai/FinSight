@@ -5,12 +5,16 @@ export function CreatePortfolioModal({ onClose, onCreate }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       await onCreate(name, description);
+    } catch (err) {
+      setError(err.message || 'Failed to create portfolio');
     } finally {
       setLoading(false);
     }
@@ -30,6 +34,12 @@ export function CreatePortfolioModal({ onClose, onCreate }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
+
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
               Portfolio Name
