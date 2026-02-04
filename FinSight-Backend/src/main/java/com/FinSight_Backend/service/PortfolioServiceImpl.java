@@ -13,6 +13,9 @@ import com.FinSight_Backend.model.Transaction;
 import com.FinSight_Backend.model.PortfolioStock;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +29,9 @@ public class PortfolioServiceImpl implements PortfolioService {
     private StocksRepo stocksRepo;
     private TransactionRepo transactionRepo;
     private PortfolioStockRepo portfolioStockRepo;
+    @PersistenceContext
+    private EntityManager em;
+
     @Override
     public PortfolioDTO addPortfolio(PortfolioDTO portfolioDTO) {
         // validate owning user exists
@@ -52,15 +58,17 @@ public class PortfolioServiceImpl implements PortfolioService {
                 portfolio.getPortfolioStocks().stream()
                         .map(ps -> new com.FinSight_Backend.dto.StockEntryDTO(ps.getStock().getStock_id(), ps.getQuantity()))
                         .collect(Collectors.toList()) : null);
+        portfolioDTO.setActive(portfolio.getActive());
         return portfolioDTO;
     }
 
     private PortfolioDTO getPortfolioDTO(PortfolioDTO portfolioDTO, Portfolio portfolio) {
-        portfolio.setName(portfolioDTO.getName());
-        portfolio.setDescription(portfolioDTO.getDescription());
-        portfolio.setTotal_value(portfolioDTO.getTotal_value());
-        portfolio.setCost_basis(portfolioDTO.getCost_basis());
-        portfolio.setYield(portfolioDTO.getYield());
+        // only update fields if provided (non-null) to avoid wiping existing values
+        if (portfolioDTO.getName() != null) portfolio.setName(portfolioDTO.getName());
+        if (portfolioDTO.getDescription() != null) portfolio.setDescription(portfolioDTO.getDescription());
+        if (portfolioDTO.getTotal_value() != null) portfolio.setTotal_value(portfolioDTO.getTotal_value());
+        if (portfolioDTO.getCost_basis() != null) portfolio.setCost_basis(portfolioDTO.getCost_basis());
+        if (portfolioDTO.getYield() != null) portfolio.setYield(portfolioDTO.getYield());
         if (portfolioDTO.getUser_id() != null) {
             User u = userRepo.findById(portfolioDTO.getUser_id()).orElse(null);
             portfolio.setUser(u);
@@ -131,6 +139,18 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
+    public java.util.Map<String, Long> getChildRowCounts(Integer portfolio_id) {
+        java.util.Map<String, Long> map = new java.util.HashMap<>();
+        try { Object o = em.createNativeQuery("SELECT COUNT(*) FROM portfolio_stock WHERE portfolio_id = :id").setParameter("id", portfolio_id).getSingleResult(); map.put("portfolio_stock_portfolio_id", ((Number)o).longValue()); } catch (Exception ignored) { map.put("portfolio_stock_portfolio_id", -1L); }
+        try { Object o = em.createNativeQuery("SELECT COUNT(*) FROM portfolio_stock WHERE portfolio_portfolio_id = :id").setParameter("id", portfolio_id).getSingleResult(); map.put("portfolio_stock_portfolio_portfolio_id", ((Number)o).longValue()); } catch (Exception ignored) { map.put("portfolio_stock_portfolio_portfolio_id", -1L); }
+        try { Object o = em.createNativeQuery("SELECT COUNT(*) FROM portfolio_stocks WHERE portfolio_id = :id").setParameter("id", portfolio_id).getSingleResult(); map.put("portfolio_stocks_portfolio_id", ((Number)o).longValue()); } catch (Exception ignored) { map.put("portfolio_stocks_portfolio_id", -1L); }
+        try { Object o = em.createNativeQuery("SELECT COUNT(*) FROM portfolio_stocks WHERE portfolio_portfolio_id = :id").setParameter("id", portfolio_id).getSingleResult(); map.put("portfolio_stocks_portfolio_portfolio_id", ((Number)o).longValue()); } catch (Exception ignored) { map.put("portfolio_stocks_portfolio_portfolio_id", -1L); }
+        try { Object o = em.createNativeQuery("SELECT COUNT(*) FROM portfolio_stock WHERE portfolio_id = :id OR portfolio_portfolio_id = :id").setParameter("id", portfolio_id).getSingleResult(); map.put("portfolio_stock_any", ((Number)o).longValue()); } catch (Exception ignored) { map.put("portfolio_stock_any", -1L); }
+        try { Object o = em.createNativeQuery("SELECT COUNT(*) FROM transaction WHERE portfolio_id = :id").setParameter("id", portfolio_id).getSingleResult(); map.put("transactions", ((Number)o).longValue()); } catch (Exception ignored) { map.put("transactions", -1L); }
+        return map;
+    }
+
+    @Override
     public PortfolioDTO updatePortfolio(Integer portfolio_id, PortfolioDTO portfolioDTO) {
         Portfolio portfolio = portfolioRepo.findById(portfolio_id).isPresent() ? portfolioRepo.findById(portfolio_id).get() : null;
         if (portfolio == null) {
@@ -144,11 +164,53 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
+    @Transactional
     public String deletePortfolio(Integer portfolio_id) {
-        Portfolio portfolio = portfolioRepo.findById(portfolio_id).isPresent() ? portfolioRepo.findById(portfolio_id).get() : null;
-        assert portfolio != null;
-        portfolioRepo.delete(portfolio);
-        return "Portfolio deleted";
+        // Remove any rows in legacy/non-mapped join tables first (so DB won't block deletion)
+        try { em.createNativeQuery("DELETE FROM portfolio_stock WHERE portfolio_id = :id").setParameter("id", portfolio_id).executeUpdate(); } catch (Exception ignored) {}
+        try { em.createNativeQuery("DELETE FROM portfolio_stock WHERE portfolio_portfolio_id = :id").setParameter("id", portfolio_id).executeUpdate(); } catch (Exception ignored) {}
+        try { em.createNativeQuery("DELETE FROM portfolio_stocks WHERE portfolio_id = :id").setParameter("id", portfolio_id).executeUpdate(); } catch (Exception ignored) {}
+        try { em.createNativeQuery("DELETE FROM portfolio_stocks WHERE portfolio_portfolio_id = :id").setParameter("id", portfolio_id).executeUpdate(); } catch (Exception ignored) {}
+        // Also try repository-level native helpers
+        try { portfolioStockRepo.deleteNativePortfolioStockByPortfolioIdCombined(portfolio_id); } catch (Exception ignored) {}
+        try { portfolioStockRepo.deleteLegacyByPortfolioIdCombined(portfolio_id); } catch (Exception ignored) {}
+        try { portfolioStockRepo.deleteLegacyByPortfolioId(portfolio_id); } catch (Exception ignored) {}
+
+        // delete transactions linked to this portfolio to avoid FK constraint
+        transactionRepo.deleteByPortfolioId(portfolio_id);
+        transactionRepo.flush();
+
+        // Attempt to delete the parent. If DB still blocks due to FK, try extra cleanup and retry once.
+        try {
+            Portfolio portfolio = portfolioRepo.findById(portfolio_id).orElse(null);
+            if (portfolio == null) return null;
+            portfolioRepo.delete(portfolio);
+            portfolioRepo.flush();
+            return "Portfolio deleted";
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            // Some child rows may still exist in legacy tables with unexpected column names. Try additional aggressive native deletes and retry.
+            try {
+                // aggressive native cleanups
+                em.createNativeQuery("DELETE FROM `portfolio_stocks` WHERE portfolio_id = :id OR portfolio_portfolio_id = :id").setParameter("id", portfolio_id).executeUpdate();
+                em.createNativeQuery("DELETE FROM `portfolio_stock` WHERE portfolio_id = :id OR portfolio_portfolio_id = :id").setParameter("id", portfolio_id).executeUpdate();
+            } catch (Exception ignored) {}
+
+            // re-delete transactions and flush
+            try { transactionRepo.deleteByPortfolioId(portfolio_id); } catch (Exception ignored) {}
+            try { transactionRepo.flush(); } catch (Exception ignored) {}
+
+            // final retry
+            try {
+                Portfolio portfolio2 = portfolioRepo.findById(portfolio_id).orElse(null);
+                if (portfolio2 == null) return null;
+                portfolioRepo.delete(portfolio2);
+                portfolioRepo.flush();
+                return "Portfolio deleted";
+            } catch (Exception ex2) {
+                // give a clear error so caller can inspect DB manually
+                throw new org.springframework.dao.DataIntegrityViolationException("Unable to delete portfolio " + portfolio_id + ". Child rows remain in join tables or other tables referencing portfolio. Manual DB cleanup required.", ex2);
+            }
+        }
     }
 
     @Override
@@ -216,6 +278,15 @@ public class PortfolioServiceImpl implements PortfolioService {
         tx.setPrice(existing.getStock().getCurrent_price() != null ? existing.getStock().getCurrent_price().longValue() : 0L);
         tx.setTimestamp_t(new java.sql.Timestamp(System.currentTimeMillis()));
         transactionRepo.save(tx);
+        return getPortfolioDTO(saved);
+    }
+
+    @Override
+    public PortfolioDTO setPortfolioActiveStatus(Integer portfolio_id, Boolean active) {
+        Portfolio portfolio = portfolioRepo.findById(portfolio_id).orElse(null);
+        if (portfolio == null) return null;
+        portfolio.setActive(active != null ? active : Boolean.FALSE);
+        Portfolio saved = portfolioRepo.save(portfolio);
         return getPortfolioDTO(saved);
     }
 }
