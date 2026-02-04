@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { Plus, Folder, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { CreatePortfolioModal } from './CreatePortfolioModal.jsx';
 import { PortfolioCard } from './PortfolioCard.jsx';
+import { portfolioApi } from '../../services/portfolioApi.js';
 
 export function PortfolioList({ onSelectPortfolio, refreshTrigger }) {
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
@@ -14,103 +14,20 @@ export function PortfolioList({ onSelectPortfolio, refreshTrigger }) {
   }, [refreshTrigger]); // Reload when refreshTrigger changes
 
   const loadPortfolios = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Fetch all portfolios
-      const response = await fetch('http://localhost:8080/api/v1/portfolio/');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const portfoliosData = await response.json();
-
-      // Transform each portfolio to include holdings with stock data
-      const detailedPortfolios = await Promise.all(
-        portfoliosData.map(async (portfolioData) => {
-          try {
-            // Fetch stock details for each stock entry
-            const holdingsWithStocks = await Promise.all(
-              portfolioData.stock_entries.map(async (entry) => {
-                try {
-                  const stockResponse = await fetch(`http://localhost:8080/api/v1/stocks/${entry.stock_id}`);
-                  if (!stockResponse.ok) {
-                    console.warn(`Failed to fetch stock ${entry.stock_id}`);
-                    return null;
-                  }
-                  const stockData = await stockResponse.json();
-
-                  return {
-                    id: entry.stock_id,
-                    portfolio_id: portfolioData.portfolio_id,
-                    stock_id: entry.stock_id,
-                    shares: entry.quantity,
-                    average_cost: portfolioData.total_value / portfolioData.stock_entries.reduce((sum, e) => sum + e.quantity, 0), // Cost per share
-                    stock: {
-                      id: stockData.stock_id,
-                      symbol: stockData.stock_sym,
-                      name: stockData.name,
-                      current_price: stockData.current_price,
-                      previous_close: stockData.day_before_price,
-                      market_cap: stockData.market_cap
-                    }
-                  };
-                } catch (err) {
-                  console.error(`Error fetching stock ${entry.stock_id}:`, err);
-                  return null;
-                }
-              })
-            );
-
-            // Transform to expected format
-            return {
-              id: portfolioData.portfolio_id,
-              name: portfolioData.name,
-              description: portfolioData.description || `Portfolio ${portfolioData.portfolio_id}`,
-              total_value: portfolioData.total_value, // Cost basis
-              cost_basis: portfolioData.cost_basis,
-              yield: portfolioData.yield,
-              user_id: portfolioData.user_id,
-              holdings: holdingsWithStocks.filter(holding => holding !== null),
-              active: portfolioData.active
-            };
-          } catch (err) {
-            console.error(`Error processing portfolio ${portfolioData.portfolio_id}:`, err);
-            return null;
-          }
-        })
-      );
-
-      setPortfolios(detailedPortfolios.filter(p => p !== null && p.active !== false));
-    } catch (err) {
-      setError(err.message);
-      console.error('Error loading portfolios:', err);
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const data = await portfolioApi.getAllPortfolios();
+    if (data) {
+      setPortfolios(data.filter(p => p.active !== false));
     }
+    setLoading(false);
   };
 
   const handleCreatePortfolio = async (name, description) => {
-    const response = await fetch('http://localhost:8080/api/v1/portfolio/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: name,
-        description: description || '',
-        user_id: 4, // Assuming user_id 4 for now - you may want to get this from auth context
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`Failed to create portfolio: ${response.status} ${errorData}`);
+    const success = await portfolioApi.createPortfolio(name, description);
+    if (success) {
+      await loadPortfolios();
+      setShowCreateModal(false);
     }
-
-    // Refresh the portfolio list to show the newly created portfolio
-    await loadPortfolios();
-    setShowCreateModal(false);
   };
 
   const calculatePortfolioValue = (portfolio) => {
@@ -147,28 +64,16 @@ export function PortfolioList({ onSelectPortfolio, refreshTrigger }) {
     );
   }
 
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-red-600 text-lg font-semibold mb-2">Error loading portfolios</div>
-        <div className="text-gray-600 mb-4">{error}</div>
-        <button
-          onClick={loadPortfolios}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Your Portfolios</h2>
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Portfolios</h2>
+          <p className="text-gray-600">Track and manage all your investment portfolios</p>
+        </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
           Create Portfolio
@@ -176,20 +81,22 @@ export function PortfolioList({ onSelectPortfolio, refreshTrigger }) {
       </div>
 
       {portfolios.length === 0 ? (
-        <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
-          <Folder className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Portfolios Yet</h3>
-          <p className="text-gray-600 mb-6">Create your first portfolio to start tracking your investments</p>
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl border-2 border-dashed border-gray-300/50 p-16 text-center shadow-lg">
+          <div className="bg-gray-100 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Folder className="w-10 h-10 text-gray-400" />
+          </div>
+          <h3 className="text-2xl font-semibold text-gray-900 mb-3">No Portfolios Yet</h3>
+          <p className="text-gray-600 mb-8 text-lg">Create your first portfolio to start tracking your investments and building wealth</p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 flex items-center gap-2"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-6 h-6" />
             Create Your First Portfolio
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {portfolios.map((portfolio) => (
             <PortfolioCard
               key={portfolio.id}
