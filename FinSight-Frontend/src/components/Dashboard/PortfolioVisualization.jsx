@@ -76,7 +76,7 @@ export function PortfolioVisualization({ refreshTrigger }) {
           })
         );
 
-        setPortfolios(detailedPortfolios.filter(p => p !== null));
+        setPortfolios(detailedPortfolios.filter(p => p !== null && p.active !== false));
       } catch (err) {
         setError(err.message);
         console.error('Error fetching portfolios:', err);

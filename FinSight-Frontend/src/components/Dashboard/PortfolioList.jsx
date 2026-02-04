@@ -71,7 +71,8 @@ export function PortfolioList({ onSelectPortfolio, refreshTrigger }) {
               cost_basis: portfolioData.cost_basis,
               yield: portfolioData.yield,
               user_id: portfolioData.user_id,
-              holdings: holdingsWithStocks.filter(holding => holding !== null)
+              holdings: holdingsWithStocks.filter(holding => holding !== null),
+              active: portfolioData.active
             };
           } catch (err) {
             console.error(`Error processing portfolio ${portfolioData.portfolio_id}:`, err);
@@ -80,7 +81,7 @@ export function PortfolioList({ onSelectPortfolio, refreshTrigger }) {
         })
       );
 
-      setPortfolios(detailedPortfolios.filter(p => p !== null));
+      setPortfolios(detailedPortfolios.filter(p => p !== null && p.active !== false));
     } catch (err) {
       setError(err.message);
       console.error('Error loading portfolios:', err);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, act } from 'react';
 import { ArrowLeft, Plus, TrendingUp, TrendingDown, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { HoldingsList } from './HoldingsList.jsx';
 import { AddStockModal } from './AddStockModal.jsx';
@@ -156,8 +156,14 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
   const confirmDeletePortfolio = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:8080/api/v1/portfolio/${portfolio.id}`, {
-        method: 'DELETE',
+      const response = await fetch(`http://localhost:8080/api/v1/portfolio/${portfolio.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          active: false,
+        }),
       });
 
       if (!response.ok) {
