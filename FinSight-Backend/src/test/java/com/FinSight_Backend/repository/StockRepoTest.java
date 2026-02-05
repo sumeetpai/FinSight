@@ -25,7 +25,7 @@ class StocksRepoTest {
         Stocks s = new Stocks();
         s.setStock_sym("AAA");
         s.setName("AAA Inc");
-        s.setCurrent_price(50);
+        s.setCurrent_price(50.00);
         Stocks saved = stocksRepo.save(s);
 
         assertThat(saved.getStock_id()).isNotNull();

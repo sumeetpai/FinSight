@@ -39,9 +39,9 @@ class PortfolioRepoTest {
         // create portfolio
         Portfolio p = new Portfolio();
         p.setName("Repo Test Portfolio");
-        p.setTotal_value(1000L);
-        p.setCost_basis(800L);
-        p.setYield(200);
+        p.setTotal_value(1000.0);
+        p.setCost_basis(800.0);
+        p.setYield(200.0);
         p.setUser(savedUser);
 
         // save portfolio

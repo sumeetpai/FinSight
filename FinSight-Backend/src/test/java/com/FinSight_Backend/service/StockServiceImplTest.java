@@ -45,18 +45,18 @@ class StockServiceImplTest {
         stocksDTO = new StocksDTO();
         stocksDTO.setName("Apple Inc.");
         stocksDTO.setStock_sym("AAPL");
-        stocksDTO.setDay_before_price(150);
-        stocksDTO.setMarket_cap(2500000000000L);
-        stocksDTO.setCurrent_price(155);
+        stocksDTO.setDay_before_price(150.0);
+        stocksDTO.setMarket_cap(2500000000000.0);
+        stocksDTO.setCurrent_price(155.0);
         stocksDTO.setPortfolio_ids(null);
 
         stocks = new Stocks();
         stocks.setStock_id(1);
         stocks.setName("Apple Inc.");
         stocks.setStock_sym("AAPL");
-        stocks.setDay_before_price(150);
-        stocks.setMarket_cap(2500000000000L);
-        stocks.setCurrent_price(155);
+        stocks.setDay_before_price(150.0);
+        stocks.setMarket_cap(2500000000000.0);
+        stocks.setCurrent_price(155.0);
     }
 
     @Test
@@ -155,17 +155,17 @@ class StockServiceImplTest {
         StocksDTO updateDTO = new StocksDTO();
         updateDTO.setName("Apple Inc. Updated");
         updateDTO.setStock_sym("AAPL");
-        updateDTO.setDay_before_price(155);
-        updateDTO.setMarket_cap(2600000000000L);
-        updateDTO.setCurrent_price(160);
+        updateDTO.setDay_before_price(155.0);
+        updateDTO.setMarket_cap(2600000000000.0);
+        updateDTO.setCurrent_price(160.00);
 
         Stocks updatedStocks = new Stocks();
         updatedStocks.setStock_id(1);
         updatedStocks.setName("Apple Inc. Updated");
         updatedStocks.setStock_sym("AAPL");
-        updatedStocks.setDay_before_price(155);
-        updatedStocks.setMarket_cap(2600000000000L);
-        updatedStocks.setCurrent_price(160);
+        updatedStocks.setDay_before_price(155.00);
+        updatedStocks.setMarket_cap(2600000000000.00);
+        updatedStocks.setCurrent_price(160.00);
 
         when(stocksRepo.findById(1)).thenReturn(Optional.of(stocks));
         when(stocksRepo.save(any(Stocks.class))).thenReturn(updatedStocks);
@@ -209,9 +209,9 @@ class StockServiceImplTest {
         StocksDTO updateDTO = new StocksDTO();
         updateDTO.setName("Apple Inc.");
         updateDTO.setStock_sym("AAPL");
-        updateDTO.setDay_before_price(150);
-        updateDTO.setMarket_cap(2500000000000L);
-        updateDTO.setCurrent_price(155);
+        updateDTO.setDay_before_price(150.00);
+        updateDTO.setMarket_cap(2500000000000.0);
+        updateDTO.setCurrent_price(155.00);
         updateDTO.setPortfolio_ids(portfolioIds);
 
         Portfolio portfolio1 = new Portfolio();

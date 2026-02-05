@@ -38,7 +38,7 @@ class TransactionRepoTest {
         t.setPortfolio_id(1);
         t.setType("ADD");
         t.setQty(3);
-        t.setPrice(100L);
+        t.setPrice(100.0);
 
         Transaction saved = transactionRepo.save(t);
         assertThat(saved.getT_id()).isNotNull();

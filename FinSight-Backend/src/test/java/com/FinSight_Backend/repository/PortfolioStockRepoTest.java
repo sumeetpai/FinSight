@@ -50,7 +50,7 @@ class PortfolioStockRepoTest {
         Stocks s = new Stocks();
         s.setStock_sym("TST");
         s.setName("Test Stock");
-        s.setCurrent_price(100);
+        s.setCurrent_price(100.0);
         Stocks savedStock = stocksRepo.save(s);
 
         PortfolioStock ps = new PortfolioStock();

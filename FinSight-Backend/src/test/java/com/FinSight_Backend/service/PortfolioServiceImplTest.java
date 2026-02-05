@@ -53,18 +53,18 @@ class PortfolioServiceImplTest {
 
         portfolioDTO = new PortfolioDTO();
         portfolioDTO.setName("My Portfolio");
-        portfolioDTO.setTotal_value(10000L);
-        portfolioDTO.setCost_basis(9000L);
-        portfolioDTO.setYield(1000);
+        portfolioDTO.setTotal_value(10000.0);
+        portfolioDTO.setCost_basis(9000.0);
+        portfolioDTO.setYield(1000.00);
         portfolioDTO.setUser_id(1);
         portfolioDTO.setStock_entries(null);
 
         portfolio = new Portfolio();
         portfolio.setPortfolio_id(1);
         portfolio.setName("My Portfolio");
-        portfolio.setTotal_value(10000L);
-        portfolio.setCost_basis(9000L);
-        portfolio.setYield(1000);
+        portfolio.setTotal_value(10000.0);
+        portfolio.setCost_basis(9000.0);
+        portfolio.setYield(1000.00);
         portfolio.setUser(user);
         portfolio.setPortfolioStocks(new ArrayList<>());
 
@@ -72,7 +72,7 @@ class PortfolioServiceImplTest {
         stocks.setStock_id(1);
         stocks.setName("Apple Inc.");
         stocks.setStock_sym("AAPL");
-        stocks.setCurrent_price(150);
+        stocks.setCurrent_price(150.00);
     }
 
     // ===============================

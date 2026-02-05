@@ -41,7 +41,7 @@ class TransactionServiceImplTest {
         transactionDTO.setUser_id(1);
         transactionDTO.setType("BUY");
         transactionDTO.setQty(10);
-        transactionDTO.setPrice(150L);
+        transactionDTO.setPrice(150.0);
         transactionDTO.setTimestamp_t(timestamp);
 
         transaction = new Transaction();
@@ -51,7 +51,7 @@ class TransactionServiceImplTest {
         transaction.setUser_id(1);
         transaction.setType("BUY");
         transaction.setQty(10);
-        transaction.setPrice(150L);
+        transaction.setPrice(150.0);
         transaction.setTimestamp_t(timestamp);
     }
 
@@ -71,7 +71,7 @@ class TransactionServiceImplTest {
         assertEquals(1, result.getUser_id());
         assertEquals("BUY", result.getType());
         assertEquals(10, result.getQty());
-        assertEquals(150L, result.getPrice());
+        assertEquals(150.0, result.getPrice());
         verify(transactionRepo, times(1)).save(any(Transaction.class));
     }
 
@@ -84,7 +84,7 @@ class TransactionServiceImplTest {
         sellDTO.setUser_id(1);
         sellDTO.setType("SELL");
         sellDTO.setQty(5);
-        sellDTO.setPrice(160L);
+        sellDTO.setPrice(160.0);
         sellDTO.setTimestamp_t(timestamp);
 
         Transaction sellTransaction = new Transaction();
@@ -94,7 +94,7 @@ class TransactionServiceImplTest {
         sellTransaction.setUser_id(1);
         sellTransaction.setType("SELL");
         sellTransaction.setQty(5);
-        sellTransaction.setPrice(160L);
+        sellTransaction.setPrice(160.0);
         sellTransaction.setTimestamp_t(timestamp);
 
         when(transactionRepo.save(any(Transaction.class))).thenReturn(sellTransaction);
@@ -147,7 +147,7 @@ class TransactionServiceImplTest {
         updateDTO.setUser_id(1);
         updateDTO.setType("SELL");
         updateDTO.setQty(8);
-        updateDTO.setPrice(155L);
+        updateDTO.setPrice(155.0);
         updateDTO.setTimestamp_t(timestamp);
 
         Transaction updatedTransaction = new Transaction();
@@ -157,7 +157,7 @@ class TransactionServiceImplTest {
         updatedTransaction.setUser_id(1);
         updatedTransaction.setType("SELL");
         updatedTransaction.setQty(8);
-        updatedTransaction.setPrice(155L);
+        updatedTransaction.setPrice(155.0);
         updatedTransaction.setTimestamp_t(timestamp);
 
         when(transactionRepo.findById(1)).thenReturn(Optional.of(transaction));
@@ -170,7 +170,7 @@ class TransactionServiceImplTest {
         assertNotNull(result);
         assertEquals("SELL", result.getType());
         assertEquals(8, result.getQty());
-        assertEquals(155L, result.getPrice());
+        assertEquals(155.0, result.getPrice());
         verify(transactionRepo, times(1)).findById(1);
         verify(transactionRepo, times(1)).save(any(Transaction.class));
     }
@@ -228,7 +228,7 @@ class TransactionServiceImplTest {
         multiDTO.setUser_id(2);
         multiDTO.setType("BUY");
         multiDTO.setQty(20);
-        multiDTO.setPrice(200L);
+        multiDTO.setPrice(200.0);
         multiDTO.setTimestamp_t(timestamp);
 
         Transaction multiTransaction = new Transaction();
@@ -238,7 +238,7 @@ class TransactionServiceImplTest {
         multiTransaction.setUser_id(2);
         multiTransaction.setType("BUY");
         multiTransaction.setQty(20);
-        multiTransaction.setPrice(200L);
+        multiTransaction.setPrice(200.0);
         multiTransaction.setTimestamp_t(timestamp);
 
         when(transactionRepo.save(any(Transaction.class))).thenReturn(multiTransaction);
@@ -264,7 +264,7 @@ class TransactionServiceImplTest {
         updateDTO.setUser_id(1);
         updateDTO.setType("BUY");
         updateDTO.setQty(15);
-        updateDTO.setPrice(145L);
+        updateDTO.setPrice(145.0);
         updateDTO.setTimestamp_t(timestamp);
 
         Transaction updatedTransaction = new Transaction();
@@ -274,7 +274,7 @@ class TransactionServiceImplTest {
         updatedTransaction.setUser_id(1);
         updatedTransaction.setType("BUY");
         updatedTransaction.setQty(15);
-        updatedTransaction.setPrice(145L);
+        updatedTransaction.setPrice(145.0);
         updatedTransaction.setTimestamp_t(timestamp);
 
         when(transactionRepo.findById(1)).thenReturn(Optional.of(transaction));
@@ -286,7 +286,7 @@ class TransactionServiceImplTest {
         // Assert
         assertNotNull(result);
         assertEquals(15, result.getQty());
-        assertEquals(145L, result.getPrice());
+        assertEquals(145.0, result.getPrice());
         verify(transactionRepo, times(1)).save(any(Transaction.class));
     }
 }

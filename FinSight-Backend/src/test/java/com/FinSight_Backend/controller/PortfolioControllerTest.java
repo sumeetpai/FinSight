@@ -41,9 +41,9 @@ class PortfolioControllerTest {
         portfolioDTO.setPortfolio_id(1);
         portfolioDTO.setName("My Portfolio");
         portfolioDTO.setUser_id(1);
-        portfolioDTO.setTotal_value(10000L);
-        portfolioDTO.setCost_basis(8000L);
-        portfolioDTO.setYield(2000);
+        portfolioDTO.setTotal_value(10000.0);
+        portfolioDTO.setCost_basis(8000.0);
+        portfolioDTO.setYield(2000.0);
 
         // Setup AddStockRequestDTO
         addStockRequestDTO = new AddStockRequestDTO();
@@ -124,7 +124,7 @@ class PortfolioControllerTest {
         updatedDTO.setPortfolio_id(1);
         updatedDTO.setName("Updated Portfolio");
         updatedDTO.setUser_id(1);
-        updatedDTO.setTotal_value(15000L);
+        updatedDTO.setTotal_value(15000.0);
 
         Mockito.when(portfolioService.updatePortfolio(Mockito.eq(1), Mockito.any(PortfolioDTO.class)))
                 .thenReturn(updatedDTO);
