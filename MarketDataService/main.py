@@ -73,3 +73,36 @@ def stocks_prices(request: SymbolsRequest):
     return BatchPriceResponse(
         prices=prices
     )
+from services.yfinance_service import get_stock_risk
+from models.responses import StockRiskResponse
+@app.get(
+    "/stock/risk/{symbol}",
+    response_model=StockRiskResponse
+)
+def stock_risk(symbol: str):
+    score, level, meaning = get_stock_risk(symbol)
+
+    return StockRiskResponse(
+        symbol=symbol.upper(),
+        risk_score=score,
+        risk_level=level,
+        meaning=meaning
+    )
+
+from services.yfinance_service import get_stock_history
+from models.responses import StockHistoryResponse
+@app.get(
+    "/stock/history/{symbol}",
+    response_model=StockHistoryResponse
+)
+def stock_history(
+    symbol: str,
+    period: str = "1y",
+    interval: str = "1d"
+):
+    candles = get_stock_history(symbol, period, interval)
+
+    return StockHistoryResponse(
+        symbol=symbol.upper(),
+        candles=candles
+    )
