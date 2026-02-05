@@ -27,7 +27,7 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
       // If the user entered a single token (likely a symbol), query the price service first
       if (!/\s/.test(trimmed)) {
         try {
-          const resp = await fetch(`http://localhost:8000/stock/price/${encodeURIComponent(trimmed)}`);
+          const resp = await fetch(`http://localhost:8080/api/v1/market/price/${encodeURIComponent(trimmed)}`);
           if (resp.ok) {
             const data = await resp.json();
             // Map response into the shape the UI expects (price API returns { symbol, price, currency, timestamp })
@@ -72,7 +72,7 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
 
     // 1. Fetch live price ONLY from price service
     const priceResp = await fetch(
-      `http://localhost:8000/stock/price/${encodeURIComponent(sym)}`
+      `http://localhost:8080/api/v1/market/price/${encodeURIComponent(sym)}`
     );
 
     if (!priceResp.ok) {
@@ -85,7 +85,7 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
     let info = null;
     try {
       const infoResp = await fetch(
-        `http://localhost:8000/stock/info/${encodeURIComponent(sym)}`
+        `http://localhost:8080/api/v1/market/info/${encodeURIComponent(sym)}`
       );
       if (infoResp.ok) {
         info = await infoResp.json();

@@ -33,14 +33,14 @@ export function PortfolioList({ onSelectPortfolio, refreshTrigger }) {
   const calculatePortfolioValue = (portfolio) => {
     if (!portfolio.holdings) return 0;
     return portfolio.holdings.reduce((sum, holding) => {
-      const currentPrice = holding.stock?.current_price || 0;
+      const currentPrice = holding.stock?.live_price ?? holding.stock?.current_price ?? 0;
       return sum + (holding.shares * currentPrice);
     }, 0);
   };
 
   const calculatePortfolioCost = (portfolio) => {
-    // Use the total_value from API as cost basis
-    return portfolio.total_value || 0;
+    // Use the cost_basis from API as cost basis
+    return portfolio.cost_basis || 0;
   };
 
   const calculatePortfolioGain = (portfolio) => {

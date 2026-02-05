@@ -19,6 +19,11 @@ class PortfolioService {
           .map(async (portfolioData) => {
             try {
               // Fetch stock details for each stock entry
+              const totalShares = portfolioData.stock_entries.reduce((sum, e) => sum + (e.quantity || 0), 0);
+              const averageCost = totalShares > 0
+                ? (Number(portfolioData.cost_basis ?? 0) / totalShares)
+                : 0;
+
               const holdingsWithStocks = await Promise.all(
                 portfolioData.stock_entries.map(async (entry) => {
                   try {
@@ -34,7 +39,7 @@ class PortfolioService {
                       portfolio_id: portfolioData.portfolio_id,
                       stock_id: entry.stock_id,
                       shares: entry.quantity,
-                      average_cost: portfolioData.total_value / portfolioData.stock_entries.reduce((sum, e) => sum + e.quantity, 0),
+                      average_cost: averageCost,
                       stock: {
                         id: stockData.stock_id,
                         symbol: stockData.stock_sym,
@@ -175,6 +180,11 @@ class PortfolioService {
       }
 
       // Fetch stock details for each stock entry
+      const totalShares = portfolioData.stock_entries.reduce((sum, e) => sum + (e.quantity || 0), 0);
+      const averageCost = totalShares > 0
+        ? (Number(portfolioData.cost_basis ?? 0) / totalShares)
+        : 0;
+
       const holdingsWithStocks = await Promise.all(
         portfolioData.stock_entries.map(async (entry) => {
           try {
@@ -190,7 +200,7 @@ class PortfolioService {
               portfolio_id: portfolioId,
               stock_id: entry.stock_id,
               shares: entry.quantity,
-              average_cost: portfolioData.total_value / portfolioData.stock_entries.reduce((sum, e) => sum + e.quantity, 0),
+              average_cost: averageCost,
               stock: {
                 id: stockData.stock_id,
                 symbol: stockData.stock_sym,

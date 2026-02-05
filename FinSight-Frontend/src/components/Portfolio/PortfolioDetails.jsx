@@ -40,16 +40,20 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
     setLoading(true);
     const data = await portfolioApi.getPortfolio(portfolioId);
     if (data) {
-      setPortfolio(applyPriceOverrides(data, overrides ?? priceOverrides));
+      const next = applyPriceOverrides(data, overrides ?? priceOverrides);
+      setPortfolio(next);
+      setLoading(false);
+      return next;
     }
     setLoading(false);
+    return null;
   };
 
   const refreshPortfolio = async (overrides) => {
-    await fetchPortfolio(portfolio.id, overrides);
+    const updated = await fetchPortfolio(portfolio.id, overrides);
     // push updated portfolio up to parent so Dashboard can pass it to visualization
     if (onPortfolioUpdate) {
-      onPortfolioUpdate(portfolio);
+      onPortfolioUpdate(updated || portfolio);
     }
   };
 
@@ -57,6 +61,12 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
     // Fetch fresh data when component mounts
     fetchPortfolio(initialPortfolio.id);
   }, [initialPortfolio.id]);
+
+  useEffect(() => {
+    if (initialPortfolio) {
+      setPortfolio(initialPortfolio);
+    }
+  }, [initialPortfolio]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

@@ -20,6 +20,7 @@ public class StockServiceImpl implements StockService {
     private StocksRepo stocksRepo;
     private PortfolioRepo portfolioRepo;
     private PortfolioStockRepo portfolioStockRepo;
+    private MarketDataClient marketDataClient;
     @Override
     public StocksDTO addStocks(StocksDTO stocksDTO) {
         Stocks stocks = new Stocks();
@@ -45,7 +46,8 @@ public class StockServiceImpl implements StockService {
     public StocksDTO getStocks(Integer stock_id) {
         Stocks stocks = stocksRepo.findById(stock_id).isPresent() ? stocksRepo.findById(stock_id).get() : null;
         assert stocks != null;
-        return getStocksDTO(stocks);
+        StocksDTO dto = getStocksDTO(stocks);
+        return applyLivePrice(dto);
     }
 
     @Override
@@ -59,7 +61,7 @@ public class StockServiceImpl implements StockService {
     public Optional<StocksDTO> getStocksBySymbol(String symbol) {
         if (symbol == null || symbol.trim().isEmpty()) return Optional.empty();
         Optional<Stocks> opt = stocksRepo.findBySymbolIgnoreCase(symbol.trim());
-        return opt.map(this::getStocksDTO);
+        return opt.map(this::getStocksDTO).map(this::applyLivePrice);
     }
 
     private StocksDTO getStocksDTO(StocksDTO stocksDTO, Stocks stocks) {
@@ -90,6 +92,17 @@ public class StockServiceImpl implements StockService {
         String msg = getStocksDTO(stocks).toString();
         stocksRepo.delete(stocks);
         return msg;
+    }
+
+    private StocksDTO applyLivePrice(StocksDTO dto) {
+        if (dto == null) return null;
+        String symbol = dto.getStock_sym();
+        if (symbol == null || symbol.trim().isEmpty()) return dto;
+        com.FinSight_Backend.dto.MarketPriceDTO live = marketDataClient.getPrice(symbol.trim());
+        if (live != null && live.getPrice() != null) {
+            dto.setCurrent_price(live.getPrice());
+        }
+        return dto;
     }
 
 }
