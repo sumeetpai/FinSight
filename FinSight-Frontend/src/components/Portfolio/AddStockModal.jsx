@@ -66,51 +66,66 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
   };
 
   const handleSelectStock = async (stock) => {
-    setSelectingStock(true);
-    try {
-      const sym = stock.symbol || stock.stock_sym || stock.id;
+  setSelectingStock(true);
+  try {
+    const sym = stock.symbol || stock.stock_sym || stock.id;
 
-      // Try to fetch enriched stock info first
-      let info = null;
-      try {
-        const infoResp = await fetch(`http://localhost:8000/stock/info/${encodeURIComponent(sym)}`);
-        if (infoResp.ok) {
-          info = await infoResp.json();
-        }
-      } catch (infoErr) {
-        console.warn('Stock info service unavailable, proceeding with fallback:', infoErr);
-      }
+    // 1. Fetch live price ONLY from price service
+    const priceResp = await fetch(
+      `http://localhost:8000/stock/price/${encodeURIComponent(sym)}`
+    );
 
-      const payload = {
-        stock_sym: info?.symbol ?? sym,
-        name: info?.name ?? (stock.name || sym),
-        current_price: stock.current_price,
-      };
-
-      const resp = await fetch('http://localhost:8080/api/v1/stocks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (resp.ok) {
-        const data = await resp.json();
-        setSelectedStock(data);
-        setPrice((data.current_price ?? stock.current_price ?? 0).toString());
-        return;
-      }
-      setSelectedStock({ ...stock, name: payload.name, symbol: payload.symbol });
-      setPrice((stock.current_price ?? 0).toString());
-    } catch (err) {
-      console.error('Error fetching stock details:', err);
-      setSelectedStock({ ...stock, name: stock.name || stock.symbol });
-      setPrice((stock.current_price ?? 0).toString());
-    } finally {
-      setSelectingStock(false);
+    if (!priceResp.ok) {
+      throw new Error('Failed to fetch stock price');
     }
-  };
+
+    const priceData = await priceResp.json(); // { symbol, price, currency, timestamp }
+
+    // 2. Fetch stock info (optional enrichment)
+    let info = null;
+    try {
+      const infoResp = await fetch(
+        `http://localhost:8000/stock/info/${encodeURIComponent(sym)}`
+      );
+      if (infoResp.ok) {
+        info = await infoResp.json();
+      }
+    } catch {
+      // non-fatal
+    }
+
+    // 3. Create or fetch stock in 8080 (NO PRICE)
+    const payload = {
+      stock_sym: info?.symbol ?? sym,
+      name: info?.name ?? sym,
+    };
+
+    const resp = await fetch('http://localhost:8080/api/v1/stocks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    let persistedStock = payload;
+    if (resp.ok) {
+      persistedStock = await resp.json();
+    }
+
+    // 4. Combine backend stock + live price (frontend-only)
+    setSelectedStock({
+      ...persistedStock,
+      live_price: Number(priceData.price),
+      currency: priceData.currency,
+      price_timestamp: priceData.timestamp,
+    });
+
+    setPrice(Number(priceData.price).toString());
+  } catch (err) {
+    console.error('Error selecting stock:', err);
+  } finally {
+    setSelectingStock(false);
+  }
+};
 
   const handleAddStock = async (e) => {
     e.preventDefault();
