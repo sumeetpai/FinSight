@@ -16,21 +16,44 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [transactionsRefreshKey, setTransactionsRefreshKey] = useState(0);
+  const [priceOverrides, setPriceOverrides] = useState({});
 
-  const fetchPortfolio = async (portfolioId) => {
+  const applyPriceOverrides = (data, overrides) => {
+    if (!data?.holdings?.length) return data;
+    const holdings = data.holdings.map((holding) => {
+      const override = overrides?.[holding.stock_id];
+      if (!override) return holding;
+      return {
+        ...holding,
+        stock: {
+          ...holding.stock,
+          live_price: override.live_price,
+          price_timestamp: override.price_timestamp,
+          currency: override.currency,
+        },
+      };
+    });
+    return { ...data, holdings };
+  };
+
+  const fetchPortfolio = async (portfolioId, overrides) => {
     setLoading(true);
     const data = await portfolioApi.getPortfolio(portfolioId);
     if (data) {
-      setPortfolio(data);
+      const next = applyPriceOverrides(data, overrides ?? priceOverrides);
+      setPortfolio(next);
+      setLoading(false);
+      return next;
     }
     setLoading(false);
+    return null;
   };
 
-  const refreshPortfolio = async () => {
-    await fetchPortfolio(portfolio.id);
+  const refreshPortfolio = async (overrides) => {
+    const updated = await fetchPortfolio(portfolio.id, overrides);
     // push updated portfolio up to parent so Dashboard can pass it to visualization
     if (onPortfolioUpdate) {
-      onPortfolioUpdate(portfolio);
+      onPortfolioUpdate(updated || portfolio);
     }
   };
 
@@ -38,6 +61,12 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
     // Fetch fresh data when component mounts
     fetchPortfolio(initialPortfolio.id);
   }, [initialPortfolio.id]);
+
+  useEffect(() => {
+    if (initialPortfolio) {
+      setPortfolio(initialPortfolio);
+    }
+  }, [initialPortfolio]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -92,7 +121,7 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
   const calculatePortfolioValue = () => {
     if (!portfolio.holdings) return 0;
     return portfolio.holdings.reduce((sum, holding) => {
-      const currentPrice = holding.stock?.current_price || 0;
+      const currentPrice = (holding.stock?.live_price ?? holding.stock?.current_price) || 0;
       return sum + (holding.shares * currentPrice);
     }, 0);
     
@@ -263,9 +292,23 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
         <AddStockModal
           portfolioId={portfolio.id}
           onClose={() => setShowAddStock(false)}
-          onAdded={(transactions) => {
+          onAdded={(payload) => {
             setShowAddStock(false);
-            refreshPortfolio();
+            const selectedStock = payload?.selectedStock;
+            let nextOverrides = priceOverrides;
+            if (selectedStock?.stock_id || selectedStock?.id) {
+              const stockId = selectedStock.stock_id ?? selectedStock.id;
+              nextOverrides = {
+                ...priceOverrides,
+                [stockId]: {
+                  live_price: selectedStock.live_price ?? selectedStock.current_price,
+                  price_timestamp: selectedStock.price_timestamp,
+                  currency: selectedStock.currency,
+                },
+              };
+              setPriceOverrides(nextOverrides);
+            }
+            refreshPortfolio(nextOverrides);
             // Trigger transaction list refresh; increment key so TransactionList useEffect sees change
             setTransactionsRefreshKey(k => k + 1);
           }}

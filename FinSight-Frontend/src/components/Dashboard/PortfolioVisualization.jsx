@@ -39,7 +39,7 @@ export function PortfolioVisualization({ refreshTrigger, portfolio }) {
     if (portfolio) {
       // p is the selected portfolio and we want per-stock breakdown
       const stockMetrics = p.holdings.map((holding) => {
-        const currentPrice = holding.stock?.current_price || 0;
+        const currentPrice = holding.stock?.live_price ?? holding.stock?.current_price ?? 0;
         const value = (holding.shares || 0) * currentPrice;
         const cost = (holding.average_cost || 0) * (holding.shares || 0);
         const gain = value - cost;
@@ -60,12 +60,12 @@ export function PortfolioVisualization({ refreshTrigger, portfolio }) {
 
     // Calculate current value from holdings
     p.holdings.forEach(holding => {
-      const currentPrice = holding.stock?.current_price || 0;
+      const currentPrice = holding.stock?.live_price ?? holding.stock?.current_price ?? 0;
       totalValue += holding.shares * currentPrice;
     });
 
-    // Use total_value from API as cost basis
-    const totalCost = p.total_value || 0;
+    // Use cost_basis from API as cost basis
+    const totalCost = p.cost_basis || 0;
     const gain = totalValue - totalCost;
     const gainPercentage = totalCost > 0 ? (gain / totalCost) * 100 : 0;
 

@@ -12,7 +12,7 @@ export function HoldingsList({ portfolio }) {
   return (
     <div className="space-y-3">
       {portfolio.holdings.map((holding) => {
-        const currentPrice = Number(holding.stock?.current_price ?? 0) || 0;
+        const currentPrice = Number(holding.stock?.live_price ?? holding.stock?.current_price ?? 0) || 0;
         const shares = Number(holding.shares ?? 0) || 0;
         const averageCost = Number(holding.average_cost ?? 0) || 0;
         const currentValue = shares * currentPrice;

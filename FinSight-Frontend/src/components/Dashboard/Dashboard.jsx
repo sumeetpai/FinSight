@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from '../Layout/Header.jsx';
 import { PortfolioList } from './PortfolioList.jsx';
 import { PortfolioDetails } from '../Portfolio/PortfolioDetails.jsx';
 import { PortfolioVisualization } from './PortfolioVisualization.jsx';
+import { portfolioApi } from '../../services/portfolioApi.js';
 
 export function Dashboard({ onGoHome }) {
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
@@ -20,6 +21,29 @@ export function Dashboard({ onGoHome }) {
     setSelectedPortfolio(null);
     handlePortfolioUpdate(); // Refresh the list when coming back
   };
+
+  useEffect(() => {
+    let alive = true;
+
+    const refresh = async () => {
+      setRefreshTrigger(prev => prev + 1);
+      if (selectedPortfolio?.id) {
+        const updated = await portfolioApi.getPortfolio(selectedPortfolio.id);
+        if (updated && alive) {
+          setSelectedPortfolio(updated);
+        }
+      }
+    };
+
+    // initial refresh to hydrate live prices
+    refresh();
+
+    const intervalId = setInterval(refresh, 15000);
+    return () => {
+      alive = false;
+      clearInterval(intervalId);
+    };
+  }, [selectedPortfolio?.id]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
