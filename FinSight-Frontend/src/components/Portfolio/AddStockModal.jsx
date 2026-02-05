@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Search, Plus } from 'lucide-react';
 import { stockApi } from '../../services/stockApi.js';
 import { transactionApi } from '../../services/transactionApi.js';
+import { apiCall } from '../../utils/toast.js';
 import { CreateStockForm } from '../Stock/CreateStockForm.jsx';
 
 export function AddStockModal({ portfolioId, onClose, onAdded }) {
@@ -11,6 +12,7 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
   const [shares, setShares] = useState('');
   const [price, setPrice] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectingStock, setSelectingStock] = useState(false);
   const [showCreateStock, setShowCreateStock] = useState(false);
 
   const handleSearch = async () => {
@@ -63,9 +65,51 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
     }
   };
 
-  const handleSelectStock = (stock) => {
-    setSelectedStock(stock);
-    setPrice(stock.current_price.toString());
+  const handleSelectStock = async (stock) => {
+    setSelectingStock(true);
+    try {
+      const sym = stock.symbol || stock.stock_sym || stock.id;
+
+      // Try to fetch enriched stock info first
+      let info = null;
+      try {
+        const infoResp = await fetch(`http://localhost:8000/stock/info/${encodeURIComponent(sym)}`);
+        if (infoResp.ok) {
+          info = await infoResp.json();
+        }
+      } catch (infoErr) {
+        console.warn('Stock info service unavailable, proceeding with fallback:', infoErr);
+      }
+
+      const payload = {
+        stock_sym: info?.symbol ?? sym,
+        name: info?.name ?? (stock.name || sym),
+        current_price: stock.current_price,
+      };
+
+      const resp = await fetch('http://localhost:8080/api/v1/stocks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        setSelectedStock(data);
+        setPrice((data.current_price ?? stock.current_price).toString());
+        return;
+      }
+      setSelectedStock({ ...stock, name: payload.name, symbol: payload.symbol });
+      setPrice(stock.current_price.toString());
+    } catch (err) {
+      console.error('Error fetching stock details:', err);
+      setSelectedStock({ ...stock, name: stock.name || stock.symbol });
+      setPrice(stock.current_price.toString());
+    } finally {
+      setSelectingStock(false);
+    }
   };
 
   const handleAddStock = async (e) => {
@@ -76,14 +120,41 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
     try {
       const sharesNum = parseFloat(shares);
       const priceNum = parseFloat(price);
+      // Ensure we have a stock_id to send to the portfolio API
+      const stockId = selectedStock.stock_id ?? selectedStock.id ?? selectedStock.stock_id;
+      if (stockId == null) {
+        throw new Error('Missing stock id for selected stock');
+      }
 
-      await transactionApi.createTransaction({
-        portfolio_id: portfolioId,
-        stock_id: selectedStock.stock_id,
-        transaction_type: 'BUY',
-        shares: sharesNum,
-        price_per_share: priceNum,
+      const userId =  4;
+
+      // Add or update the portfolio's stock entry (shows toasts via apiCall)
+      await apiCall(async () => {
+        const resp = await fetch(`http://localhost:8080/api/v1/portfolio/${portfolioId}/stocks`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            stock_id: stockId,
+            user_id: userId,
+            qty: sharesNum,
+          }),
+        });
+
+        if (!resp.ok) {
+          const text = await resp.text();
+          throw new Error(`Failed to add stock to portfolio: ${resp.status} ${text}`);
+        }
+
+        return await resp.json();
+      }, {
+        successMessage: 'Stock added to portfolio!',
+        errorMessage: 'Failed to add stock to portfolio',
+        showLoadingToast: true,
+        loadingMessage: 'Adding stock to portfolio...'
       });
+
 
       onAdded();
     } catch (error) {
@@ -158,21 +229,22 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
                 {searchResults.map((stock) => (
                   <button
                     key={stock.id}
-                    onClick={() => handleSelectStock(stock)}
-                    className="w-full text-left p-6 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl hover:shadow-2xl hover:transform hover:-translate-y-1 transition-all duration-300"
+                    onClick={() => !selectingStock && handleSelectStock(stock)}
+                    disabled={selectingStock}
+                    className="w-full text-left p-6 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl hover:shadow-2xl hover:transform hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-xl font-bold text-gray-900">{stock.symbol}</div>
-                        <div className="text-gray-600 mt-1">{stock.name}</div>
+                        <div className="text-gray-600 mt-1 font-bold">{stock.name}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-gray-900">
                           ${stock.current_price.toFixed(2)}
                         </div>
-                        <div className="text-sm text-gray-600 font-medium">
+                      {/* <div className="text-sm text-gray-600 font-medium">
                           ${(stock.market_cap / 1000000000).toFixed(2)}B
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </button>
@@ -215,6 +287,7 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 required
+                dis
                 min="0.01"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
                 placeholder="0.00"
