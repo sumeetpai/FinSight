@@ -12,9 +12,11 @@ export function HoldingsList({ portfolio }) {
   return (
     <div className="space-y-3">
       {portfolio.holdings.map((holding) => {
-        const currentPrice = holding.stock?.current_price || 0;
-        const currentValue = holding.shares * currentPrice;
-        const costBasis = holding.shares * holding.average_cost;
+        const currentPrice = Number(holding.stock?.current_price ?? 0) || 0;
+        const shares = Number(holding.shares ?? 0) || 0;
+        const averageCost = Number(holding.average_cost ?? 0) || 0;
+        const currentValue = shares * currentPrice;
+        const costBasis = shares * averageCost;
         const gain = currentValue - costBasis;
         const gainPercent = costBasis > 0 ? (gain / costBasis) * 100 : 0;
         const isPositive = gain >= 0;
@@ -35,12 +37,12 @@ export function HoldingsList({ portfolio }) {
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
                     <span className="text-gray-600">Shares: </span>
-                    <span className="font-medium text-gray-900">{holding.shares.toFixed(4)}</span>
+                    <span className="font-medium text-gray-900">{shares.toFixed(4)}</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Avg Cost: </span>
                     <span className="font-medium text-gray-900">
-                      ${holding.average_cost.toFixed(2)}
+                      ${averageCost.toFixed(2)}
                     </span>
                   </div>
                   <div>

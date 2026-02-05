@@ -6,8 +6,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("api/v1/transaction/")
+@RequestMapping("api/v1/transactions")
 @AllArgsConstructor
 public class TransactionController {
     private TransactionService transactionService;
@@ -30,6 +32,15 @@ public class TransactionController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(transactionDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/portfolio/{portfolio_id}")
+    public ResponseEntity<List<TransactionDTO>> getTransactionsByPortfolio(@PathVariable Integer portfolio_id) {
+        if (portfolio_id == null) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        List<TransactionDTO> transactions = transactionService.getTransactionsByPortfolioId(portfolio_id);
+        return new ResponseEntity<>(transactions, HttpStatus.OK);
     }
 
     @PutMapping("{t_id}")

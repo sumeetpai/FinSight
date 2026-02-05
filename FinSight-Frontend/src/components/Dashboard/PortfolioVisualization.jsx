@@ -4,40 +4,73 @@ import { portfolioApi } from '../../services/portfolioApi';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-export function PortfolioVisualization({ refreshTrigger }) {
+export function PortfolioVisualization({ refreshTrigger, portfolio }) {
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
- 
-   useEffect(() => {
-     loadPortfolios();
-   }, [refreshTrigger]); // Reload when refreshTrigger changes
- 
-   const loadPortfolios = async () => {
-     setLoading(true);
-     const data = await portfolioApi.getAllPortfolios();
-     if (data) {
-       setPortfolios(data.filter(p => p.active !== false));
-     }
-     setLoading(false);
-   };
-  const calculatePortfolioMetrics = (portfolio) => {
+  useEffect(() => {
+    if (!portfolio) {
+      loadPortfolios();
+    } else {
+      // when a portfolio is provided we don't need to load all portfolios
+      setPortfolios([portfolio]);
+      setLoading(false);
+    }
+  }, [refreshTrigger, portfolio]); // Reload when refreshTrigger or selected portfolio changes
+
+  const loadPortfolios = async () => {
+    setLoading(true);
+    try {
+      const data = await portfolioApi.getAllPortfolios();
+      if (data) {
+        setPortfolios(data.filter(p => p.active !== false));
+      }
+    } catch (err) {
+      console.error('Error loading portfolios for visualization:', err);
+      setError(err.message || String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculatePortfolioMetrics = (p) => {
+    // If a single portfolio is passed in, calculate per-stock metrics
+    if (portfolio) {
+      // p is the selected portfolio and we want per-stock breakdown
+      const stockMetrics = p.holdings.map((holding) => {
+        const currentPrice = holding.stock?.current_price || 0;
+        const value = (holding.shares || 0) * currentPrice;
+        const cost = (holding.average_cost || 0) * (holding.shares || 0);
+        const gain = value - cost;
+        const gainPercentage = cost > 0 ? (gain / cost) * 100 : 0;
+        return {
+          name: holding.stock?.symbol || holding.stock?.symbol || `Stock ${holding.stock_id || holding.id || ''}`,
+          totalValue: Math.round(value * 100) / 100,
+          totalCost: Math.round(cost * 100) / 100,
+          gain: Math.round(gain * 100) / 100,
+          gainPercentage: Math.round(gainPercentage * 100) / 100
+        };
+      });
+      return stockMetrics;
+    }
+
+    // Default: portfolio-level metrics for each portfolio in list
     let totalValue = 0;
 
     // Calculate current value from holdings
-    portfolio.holdings.forEach(holding => {
+    p.holdings.forEach(holding => {
       const currentPrice = holding.stock?.current_price || 0;
       totalValue += holding.shares * currentPrice;
     });
 
     // Use total_value from API as cost basis
-    const totalCost = portfolio.total_value || 0;
+    const totalCost = p.total_value || 0;
     const gain = totalValue - totalCost;
     const gainPercentage = totalCost > 0 ? (gain / totalCost) * 100 : 0;
 
     return {
-      name: portfolio.name,
+      name: p.name,
       totalValue: Math.round(totalValue * 100) / 100,
       totalCost: Math.round(totalCost * 100) / 100,
       gain: Math.round(gain * 100) / 100,
@@ -68,24 +101,31 @@ export function PortfolioVisualization({ refreshTrigger }) {
     );
   }
 
-  const portfolioMetrics = portfolios.map(calculatePortfolioMetrics);
+  // Build metrics depending on whether we're in per-portfolio or per-stock mode
+  let portfolioMetrics = [];
+  if (portfolio) {
+    // calculate per-stock metrics
+    portfolioMetrics = calculatePortfolioMetrics(portfolio);
+  } else {
+    portfolioMetrics = portfolios.map(calculatePortfolioMetrics);
+  }
 
-  const valueData = portfolioMetrics.map(p => ({
-    name: p.name,
-    value: p.totalValue
-  }));
+  const averageReturn = portfolioMetrics.length > 0
+    ? (portfolioMetrics.reduce((sum, p) => sum + (p.gainPercentage || 0), 0) / portfolioMetrics.length)
+    : 0;
+  const safeAverageReturn = Number(averageReturn ?? 0) || 0;
 
-  const gainData = portfolioMetrics.map(p => ({
-    name: p.name,
-    gain: p.gain,
-    gainPercentage: p.gainPercentage
-  }));
+  const valueData = portfolio
+    ? portfolioMetrics.map(p => ({ name: p.name, value: p.totalValue }))
+    : portfolioMetrics.map(p => ({ name: p.name, value: p.totalValue }));
 
-  const pieData = portfolioMetrics.map((p, index) => ({
-    name: p.name,
-    value: p.totalValue,
-    color: COLORS[index % COLORS.length]
-  }));
+  const gainData = portfolio
+    ? portfolioMetrics.map(p => ({ name: p.name, gain: p.gain, gainPercentage: p.gainPercentage }))
+    : portfolioMetrics.map(p => ({ name: p.name, gain: p.gain, gainPercentage: p.gainPercentage }));
+
+  const pieData = portfolio
+    ? portfolioMetrics.map((p, index) => ({ name: p.name, value: p.totalValue, color: COLORS[index % COLORS.length] }))
+    : portfolioMetrics.map((p, index) => ({ name: p.name, value: p.totalValue, color: COLORS[index % COLORS.length] }));
 
   return (
     <div className="space-y-8">
@@ -94,9 +134,9 @@ export function PortfolioVisualization({ refreshTrigger }) {
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-100 text-sm font-medium">Total Portfolio Value</p>
+              <p className="text-blue-100 text-sm font-medium">Total {portfolio ? 'Holding' : 'Portfolio'} Value</p>
               <p className="text-2xl font-bold">
-                ${portfolioMetrics.reduce((sum, p) => sum + p.totalValue, 0).toLocaleString()}
+                ${portfolioMetrics.reduce((sum, p) => sum + (p.totalValue || 0), 0).toLocaleString()}
               </p>
             </div>
             <div className="text-blue-200">
@@ -112,7 +152,7 @@ export function PortfolioVisualization({ refreshTrigger }) {
             <div>
               <p className="text-green-100 text-sm font-medium">Total Unrealized Gain</p>
               <p className="text-2xl font-bold">
-                ${portfolioMetrics.reduce((sum, p) => sum + p.gain, 0).toLocaleString()}
+                ${portfolioMetrics.reduce((sum, p) => sum + (p.gain || 0), 0).toLocaleString()}
               </p>
             </div>
             <div className="text-green-200">
@@ -128,9 +168,7 @@ export function PortfolioVisualization({ refreshTrigger }) {
             <div>
               <p className="text-purple-100 text-sm font-medium">Average Return</p>
               <p className="text-2xl font-bold">
-                {portfolioMetrics.length > 0
-                  ? (portfolioMetrics.reduce((sum, p) => sum + p.gainPercentage, 0) / portfolioMetrics.length).toFixed(1)
-                  : 0}%
+                {safeAverageReturn.toFixed(1)}%
               </p>
             </div>
             <div className="text-purple-200">
@@ -144,13 +182,13 @@ export function PortfolioVisualization({ refreshTrigger }) {
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Portfolio Values Bar Chart */}
+        {/* Values Bar Chart */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
             <svg className="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
               <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
             </svg>
-            Portfolio Values
+            {portfolio ? 'Holdings Values' : 'Portfolio Values'}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={valueData}>
@@ -180,13 +218,13 @@ export function PortfolioVisualization({ refreshTrigger }) {
           </ResponsiveContainer>
         </div>
 
-        {/* Portfolio Gains Bar Chart */}
+        {/* Gains Bar Chart */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
             <svg className="w-5 h-5 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd"/>
             </svg>
-            Portfolio Gains
+            {portfolio ? 'Holdings Gains' : 'Portfolio Gains'}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={gainData}>
@@ -220,13 +258,13 @@ export function PortfolioVisualization({ refreshTrigger }) {
         </div>
       </div>
 
-      {/* Portfolio Allocation Pie Chart */}
+      {/* Allocation Pie Chart */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
           <svg className="w-5 h-5 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l2-2z" clipRule="evenodd"/>
           </svg>
-          Portfolio Allocation
+          {portfolio ? 'Holdings Allocation' : 'Portfolio Allocation'}
         </h3>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
@@ -235,7 +273,7 @@ export function PortfolioVisualization({ refreshTrigger }) {
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+              label={({ name, percent }) => `${name} ${(Number(percent) * 100).toFixed(1)}%`}
               outerRadius={100}
               fill="#8884d8"
               dataKey="value"

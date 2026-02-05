@@ -6,6 +6,9 @@ import com.FinSight_Backend.model.Transaction;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @AllArgsConstructor
 public class TransactionServiceImpl implements TransactionService{
@@ -57,5 +60,11 @@ public class TransactionServiceImpl implements TransactionService{
     @Override
     public String deleteTransaction(Integer t_id) {
         return transactionRepo.findById(t_id).map(tx -> { transactionRepo.delete(tx); return "Transaction deleted"; }).orElse(null);
+    }
+
+    @Override
+    public List<TransactionDTO> getTransactionsByPortfolioId(Integer portfolio_id) {
+        List<Transaction> transactions = transactionRepo.findByPortfolioId(portfolio_id);
+        return transactions.stream().map(this::toDTO).collect(Collectors.toList());
     }
 }

@@ -35,7 +35,7 @@ export function AddTransactionModal({ portfolioId, onClose, onAdded }) {
 
   const handleSelectStock = (stock) => {
     setSelectedStock(stock);
-    setPrice(stock.current_price.toString());
+    setPrice((stock.current_price ?? 0).toString());
   };
 
   const handleSubmit = async (e) => {
@@ -44,8 +44,8 @@ export function AddTransactionModal({ portfolioId, onClose, onAdded }) {
 
     setLoading(true);
     try {
-      const sharesNum = parseFloat(shares);
-      const priceNum = parseFloat(price);
+      const sharesNum = parseFloat(shares) || 0;
+      const priceNum = parseFloat(price) || 0;
 
       await transactionApi.createTransaction({
         portfolio_id: portfolioId,
@@ -115,7 +115,7 @@ export function AddTransactionModal({ portfolioId, onClose, onAdded }) {
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-gray-900">
-                          ${stock.current_price.toFixed(2)}
+                          ${Number(stock.current_price ?? 0).toFixed(2)}
                         </div>
                       </div>
                     </div>
@@ -232,7 +232,7 @@ export function AddTransactionModal({ portfolioId, onClose, onAdded }) {
                   transactionType === 'BUY' ? 'text-red-700' : 'text-green-700'
                 }`}>
                   {transactionType === 'BUY' ? '-' : '+'}
-                  ${(parseFloat(shares) * parseFloat(price)).toFixed(2)}
+                  ${((parseFloat(shares) || 0) * (parseFloat(price) || 0)).toFixed(2)}
                 </div>
               </div>
             )}

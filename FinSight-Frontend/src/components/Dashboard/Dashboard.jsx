@@ -8,7 +8,11 @@ export function Dashboard({ onGoHome }) {
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const handlePortfolioUpdate = () => {
+  // Accept an optional updatedPortfolio so child can push fresh state up
+  const handlePortfolioUpdate = (updatedPortfolio) => {
+    if (updatedPortfolio) {
+      setSelectedPortfolio(updatedPortfolio);
+    }
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -54,7 +58,7 @@ export function Dashboard({ onGoHome }) {
             </h1>
             <p className="text-xl text-gray-600">Comprehensive overview of all your portfolios with real-time insights</p>
           </div>
-          <PortfolioVisualization refreshTrigger={refreshTrigger} />
+          <PortfolioVisualization refreshTrigger={refreshTrigger} portfolio={selectedPortfolio} />
         </div>
       </main>
     </div>

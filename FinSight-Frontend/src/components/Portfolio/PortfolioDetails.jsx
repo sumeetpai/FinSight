@@ -15,6 +15,7 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [transactionsRefreshKey, setTransactionsRefreshKey] = useState(0);
 
   const fetchPortfolio = async (portfolioId) => {
     setLoading(true);
@@ -27,6 +28,10 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
 
   const refreshPortfolio = async () => {
     await fetchPortfolio(portfolio.id);
+    // push updated portfolio up to parent so Dashboard can pass it to visualization
+    if (onPortfolioUpdate) {
+      onPortfolioUpdate(portfolio);
+    }
   };
 
   useEffect(() => {
@@ -117,6 +122,7 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
   const gain = calculatePortfolioGain();
   const gainPercent = calculatePortfolioGainPercent();
   const isPositive = gain >= 0;
+  const safeGainPercent = Number(gainPercent ?? 0) || 0;
 
   if (loading) {
     return (
@@ -206,7 +212,7 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
               {isPositive ? '+' : ''}${gain.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className={`text-sm font-semibold mt-1 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-              {isPositive ? '+' : ''}{gainPercent.toFixed(2)}%
+              {isPositive ? '+' : ''}{safeGainPercent.toFixed(2)}%
             </div>
           </div>
         </div>
@@ -247,6 +253,7 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
               <TransactionList
                 portfolioId={portfolio.id}
                 onUpdate={refreshPortfolio}
+                refreshKey={transactionsRefreshKey}
               />
             )}
           </div>
@@ -256,9 +263,11 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
         <AddStockModal
           portfolioId={portfolio.id}
           onClose={() => setShowAddStock(false)}
-          onAdded={() => {
+          onAdded={(transactions) => {
             setShowAddStock(false);
             refreshPortfolio();
+            // Trigger transaction list refresh; increment key so TransactionList useEffect sees change
+            setTransactionsRefreshKey(k => k + 1);
           }}
         />
       )}

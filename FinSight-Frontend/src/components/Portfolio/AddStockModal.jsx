@@ -98,15 +98,15 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
       if (resp.ok) {
         const data = await resp.json();
         setSelectedStock(data);
-        setPrice((data.current_price ?? stock.current_price).toString());
+        setPrice((data.current_price ?? stock.current_price ?? 0).toString());
         return;
       }
       setSelectedStock({ ...stock, name: payload.name, symbol: payload.symbol });
-      setPrice(stock.current_price.toString());
+      setPrice((stock.current_price ?? 0).toString());
     } catch (err) {
       console.error('Error fetching stock details:', err);
       setSelectedStock({ ...stock, name: stock.name || stock.symbol });
-      setPrice(stock.current_price.toString());
+      setPrice((stock.current_price ?? 0).toString());
     } finally {
       setSelectingStock(false);
     }
@@ -155,8 +155,16 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
         loadingMessage: 'Adding stock to portfolio...'
       });
 
+      // Fetch transactions for the portfolio so the newly-created transaction is retrieved via the GET endpoint
+      let transactions = [];
+      try {
+        transactions = await transactionApi.getTransactionsByPortfolio(portfolioId);
+      } catch (txErr) {
+        console.warn('Failed to fetch transactions after adding stock:', txErr);
+      }
 
-      onAdded();
+      // Notify parent that a stock was added and provide fetched transactions (if any)
+      onAdded(transactions);
     } catch (error) {
       console.error('Error adding stock:', error);
     } finally {
@@ -232,11 +240,8 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-gray-900">
-                          ${stock.current_price.toFixed(2)}
+                          ${Number(stock.current_price ?? 0).toFixed(2)}
                         </div>
-                      {/* <div className="text-sm text-gray-600 font-medium">
-                          ${(stock.market_cap / 1000000000).toFixed(2)}B
-                        </div> */}
                       </div>
                     </div>
                   </button>

@@ -2,6 +2,7 @@ import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 
 export function PortfolioCard({ portfolio, value, gain, gainPercent, onClick }) {
   const isPositive = gain >= 0;
+  const safeGainPercent = Number(gainPercent ?? 0) || 0;
 
   return (
     <div
@@ -46,7 +47,7 @@ export function PortfolioCard({ portfolio, value, gain, gainPercent, onClick }) 
           </div>
           <div className={`text-right px-4 py-2 rounded-xl ${isPositive ? 'bg-green-50' : 'bg-red-50'} border ${isPositive ? 'border-green-200' : 'border-red-200'}`}>
             <div className={`text-sm font-bold ${isPositive ? 'text-green-700' : 'text-red-700'}`}>
-              {isPositive ? '+' : ''}{gainPercent.toFixed(2)}%
+              {isPositive ? '+' : ''}{safeGainPercent.toFixed(2)}%
             </div>
           </div>
         </div>
