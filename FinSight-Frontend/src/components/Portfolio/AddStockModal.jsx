@@ -215,14 +215,6 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
               </button>
             </div>
 
-            <button
-              onClick={() => setShowCreateStock(true)}
-              className="flex items-center gap-3 px-6 py-3 text-blue-600 hover:bg-blue-50/80 rounded-xl transition-all duration-200 w-full justify-center border-2 border-blue-200/50 hover:border-blue-300 font-semibold"
-            >
-              <Plus className="w-5 h-5" />
-              Create New Stock
-            </button>
-
             {searchResults.length > 0 && (
               <div className="space-y-4">
                 <div className="text-lg font-semibold text-gray-700">Search Results:</div>

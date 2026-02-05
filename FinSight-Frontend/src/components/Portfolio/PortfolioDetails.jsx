@@ -95,6 +95,7 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
 
   const calculatePortfolioCost = () => {
     // Use the cost_basis from API as cost basis
+
     return portfolio.cost_basis || 0;
   };
 
