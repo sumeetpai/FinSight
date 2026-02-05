@@ -1,4 +1,4 @@
-package com.FinSight_Backend.FinSight_Backend;
+package com.FinSight_Backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
