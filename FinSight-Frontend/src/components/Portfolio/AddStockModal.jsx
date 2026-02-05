@@ -20,10 +20,42 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
     }
 
     try {
+      const trimmed = searchQuery.trim();
+
+      // If the user entered a single token (likely a symbol), query the price service first
+      if (!/\s/.test(trimmed)) {
+        try {
+          const resp = await fetch(`http://localhost:8000/stock/price/${encodeURIComponent(trimmed)}`);
+          if (resp.ok) {
+            const data = await resp.json();
+            // Map response into the shape the UI expects (price API returns { symbol, price, currency, timestamp })
+            const parsedPrice = Number(data.price);
+            const stockFromPrice = {
+              id: data.symbol,
+              stock_id: data.symbol,
+              symbol: data.symbol,
+              stock_sym: data.symbol,
+              name: data.symbol, // no friendly name in price API, use symbol as fallback
+              current_price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+              market_cap: 0,
+              currency: data.currency ?? 'USD',
+              timestamp: data.timestamp ?? null,
+            };
+
+            setSearchResults([stockFromPrice]);
+            return;
+          }
+        } catch (err) {
+          // If the price service fails, fall back to the local stocks search below
+          console.warn('Price service unavailable, falling back to local search:', err);
+        }
+      }
+
+      // Default behavior: fetch all stocks and filter locally
       const allStocks = await stockApi.getAllStocks();
       const results = allStocks.filter(stock =>
-        stock.stock_sym.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        stock.name.toLowerCase().includes(searchQuery.toLowerCase())
+        (stock.stock_sym || stock.symbol || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (stock.name || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
       setSearchResults(results);
     } catch (error) {
