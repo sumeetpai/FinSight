@@ -12,8 +12,8 @@ public class Stocks {
     private Integer stock_id;
     private String stock_sym;
     private String name;
-    private Integer day_before_price;
-    private Long market_cap;
-    private Integer current_price;
+    private Double day_before_price;
+    private Double market_cap;
+    private Double current_price;
 
 }

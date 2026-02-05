@@ -18,6 +18,6 @@ public class Transaction {
     private Integer user_id;
     private String type; // ADD or REMOVE
     private Integer qty;
-    private Long price;
+    private Double price;
     private Timestamp timestamp_t;
 }
