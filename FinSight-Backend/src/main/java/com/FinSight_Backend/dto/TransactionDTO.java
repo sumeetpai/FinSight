@@ -17,6 +17,6 @@ public class TransactionDTO {
     private Integer user_id;
     private String type;
     private Integer qty;
-    private Long price;
+    private Double price;
     private Timestamp timestamp_t;
 }
