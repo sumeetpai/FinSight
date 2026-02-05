@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,6 +53,13 @@ public class StockServiceImpl implements StockService {
         Stocks stocks = stocksRepo.findById(stock_id).isPresent() ? stocksRepo.findById(stock_id).get() : null;
         assert stocks != null;
         return getStocksDTO(stocksDTO, stocks);
+    }
+
+    @Override
+    public Optional<StocksDTO> getStocksBySymbol(String symbol) {
+        if (symbol == null || symbol.trim().isEmpty()) return Optional.empty();
+        Optional<Stocks> opt = stocksRepo.findBySymbolIgnoreCase(symbol.trim());
+        return opt.map(this::getStocksDTO);
     }
 
     private StocksDTO getStocksDTO(StocksDTO stocksDTO, Stocks stocks) {

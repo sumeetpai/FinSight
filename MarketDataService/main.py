@@ -14,7 +14,23 @@ from models.responses import (
     BatchPriceResponse
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="Market Data Service")
+
+# Enable CORS for local frontend running at http://localhost:5173
+origins = [
+    "http://localhost:5173",
+    "http://localhost:63342",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 
 @app.get(
