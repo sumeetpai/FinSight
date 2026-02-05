@@ -15,9 +15,9 @@ public class Portfolio {
     private String name;
     private String description;
     private Boolean active;
-    private Long total_value;
-    private Long cost_basis;
-    private Integer yield;
+    private Double total_value;
+    private Double cost_basis;
+    private Double yield;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
