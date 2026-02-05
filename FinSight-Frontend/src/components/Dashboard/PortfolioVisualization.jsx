@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { portfolioApi } from '../../services/portfolioApi';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -8,86 +9,19 @@ export function PortfolioVisualization({ refreshTrigger }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchPortfolios = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch all portfolios
-        const response = await fetch('http://localhost:8080/api/v1/portfolio/');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const portfoliosData = await response.json();
-
-        // Transform each portfolio to include holdings with stock data
-        const detailedPortfolios = await Promise.all(
-          portfoliosData.map(async (portfolioData) => {
-            try {
-              // Fetch stock details for each stock entry
-              const holdingsWithStocks = await Promise.all(
-                portfolioData.stock_entries.map(async (entry) => {
-                  try {
-                    const stockResponse = await fetch(`http://localhost:8080/api/v1/stocks/${entry.stock_id}`);
-                    if (!stockResponse.ok) {
-                      console.warn(`Failed to fetch stock ${entry.stock_id}`);
-                      return null;
-                    }
-                    const stockData = await stockResponse.json();
-
-                    return {
-                      id: entry.stock_id,
-                      portfolio_id: portfolioData.portfolio_id,
-                      stock_id: entry.stock_id,
-                      shares: entry.quantity,
-                      average_cost: portfolioData.total_value / portfolioData.stock_entries.reduce((sum, e) => sum + e.quantity, 0), // Cost per share
-                      stock: {
-                        id: stockData.stock_id,
-                        symbol: stockData.stock_sym,
-                        name: stockData.name,
-                        current_price: stockData.current_price,
-                        previous_close: stockData.day_before_price,
-                        market_cap: stockData.market_cap
-                      }
-                    };
-                  } catch (err) {
-                    console.error(`Error fetching stock ${entry.stock_id}:`, err);
-                    return null;
-                  }
-                })
-              );
-
-              // Transform to expected format
-              return {
-                id: portfolioData.portfolio_id,
-                name: portfolioData.name,
-                description: `Portfolio ${portfolioData.portfolio_id}`,
-                total_value: portfolioData.total_value, // Cost basis
-                cost_basis: portfolioData.cost_basis,
-                yield: portfolioData.yield,
-                user_id: portfolioData.user_id,
-                holdings: holdingsWithStocks.filter(holding => holding !== null)
-              };
-            } catch (err) {
-              console.error(`Error processing portfolio ${portfolioData.portfolio_id}:`, err);
-              return null;
-            }
-          })
-        );
-
-        setPortfolios(detailedPortfolios.filter(p => p !== null && p.active !== false));
-      } catch (err) {
-        setError(err.message);
-        console.error('Error fetching portfolios:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPortfolios();
-  }, [refreshTrigger]); // Reload when refreshTrigger changes
-
+ 
+   useEffect(() => {
+     loadPortfolios();
+   }, [refreshTrigger]); // Reload when refreshTrigger changes
+ 
+   const loadPortfolios = async () => {
+     setLoading(true);
+     const data = await portfolioApi.getAllPortfolios();
+     if (data) {
+       setPortfolios(data.filter(p => p.active !== false));
+     }
+     setLoading(false);
+   };
   const calculatePortfolioMetrics = (portfolio) => {
     let totalValue = 0;
 
