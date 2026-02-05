@@ -234,8 +234,8 @@ public class PortfolioServiceImpl implements PortfolioService {
             portfolioStockRepo.save(ps);
         }
         // update cost_basis by adding the cost of the added shares (current_price * qty)
-        long addedCost = (stock.getCurrent_price() != null ? stock.getCurrent_price().longValue() : 0L) * (long) addedQty;
-        Long existingCost = portfolio.getCost_basis() != null ? portfolio.getCost_basis() : 0L;
+        Double addedCost = (stock.getCurrent_price() != null ? stock.getCurrent_price().doubleValue() : 0D) * addedQty;
+        Double existingCost = portfolio.getCost_basis() != null ? portfolio.getCost_basis() : 0D;
         portfolio.setCost_basis(existingCost + addedCost);
         Portfolio saved = portfolioRepo.save(portfolio);
         // record transaction
@@ -245,7 +245,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         tx.setUser_id(user_id);
         tx.setType("ADD");
         tx.setQty(addedQty);
-        tx.setPrice(stock.getCurrent_price() != null ? stock.getCurrent_price().longValue() : 0L);
+        tx.setPrice(stock.getCurrent_price() != null ? stock.getCurrent_price().doubleValue() : 0D);
         tx.setTimestamp_t(new java.sql.Timestamp(System.currentTimeMillis()));
         transactionRepo.save(tx);
         return getPortfolioDTO(saved);
@@ -266,7 +266,7 @@ public class PortfolioServiceImpl implements PortfolioService {
             portfolioStockRepo.delete(existing);
         }
         List<PortfolioStock> entries = portfolioStockRepo.findByPortfolioId(portfolio_id);
-        long total = entries.stream().mapToLong(e -> (e.getStock().getCurrent_price() != null ? e.getStock().getCurrent_price() : 0) * (e.getQuantity() != null ? e.getQuantity() : 0)).sum();
+        Double total = entries.stream().mapToDouble(e -> (e.getStock().getCurrent_price() != null ? e.getStock().getCurrent_price() : 0) * (e.getQuantity() != null ? e.getQuantity() : 0)).sum();
         portfolio.setTotal_value(total);
         Portfolio saved = portfolioRepo.save(portfolio);
         Transaction tx = new Transaction();
@@ -275,7 +275,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         tx.setUser_id(user_id);
         tx.setType("REMOVE");
         tx.setQty(removeQty);
-        tx.setPrice(existing.getStock().getCurrent_price() != null ? existing.getStock().getCurrent_price().longValue() : 0L);
+        tx.setPrice(existing.getStock().getCurrent_price() != null ? existing.getStock().getCurrent_price().doubleValue() : 0F);
         tx.setTimestamp_t(new java.sql.Timestamp(System.currentTimeMillis()));
         transactionRepo.save(tx);
         return getPortfolioDTO(saved);
