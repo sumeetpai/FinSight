@@ -179,7 +179,12 @@ export function AddStockModal({ portfolioId, onClose, onAdded }) {
       }
 
       // Notify parent that a stock was added and provide fetched transactions (if any)
-      onAdded(transactions);
+      onAdded({
+        transactions,
+        selectedStock,
+        shares: sharesNum,
+        price: priceNum,
+      });
     } catch (error) {
       console.error('Error adding stock:', error);
     } finally {
