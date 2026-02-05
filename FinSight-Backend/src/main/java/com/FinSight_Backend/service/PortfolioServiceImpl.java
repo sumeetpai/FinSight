@@ -29,6 +29,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     private StocksRepo stocksRepo;
     private TransactionRepo transactionRepo;
     private PortfolioStockRepo portfolioStockRepo;
+    private MarketDataClient marketDataClient;
     @PersistenceContext
     private EntityManager em;
 
@@ -266,7 +267,11 @@ public class PortfolioServiceImpl implements PortfolioService {
             portfolioStockRepo.delete(existing);
         }
         List<PortfolioStock> entries = portfolioStockRepo.findByPortfolioId(portfolio_id);
-        Double total = entries.stream().mapToDouble(e -> (e.getStock().getCurrent_price() != null ? e.getStock().getCurrent_price() : 0) * (e.getQuantity() != null ? e.getQuantity() : 0)).sum();
+        Double total = entries.stream().mapToDouble(e -> {
+            Stocks s = e.getStock();
+            Double live = getLivePriceOrFallback(s);
+            return (live != null ? live : 0) * (e.getQuantity() != null ? e.getQuantity() : 0);
+        }).sum();
         portfolio.setTotal_value(total);
         Portfolio saved = portfolioRepo.save(portfolio);
         Transaction tx = new Transaction();
@@ -275,10 +280,23 @@ public class PortfolioServiceImpl implements PortfolioService {
         tx.setUser_id(user_id);
         tx.setType("REMOVE");
         tx.setQty(removeQty);
-        tx.setPrice(existing.getStock().getCurrent_price() != null ? existing.getStock().getCurrent_price().doubleValue() : 0F);
+        Double livePrice = getLivePriceOrFallback(existing.getStock());
+        tx.setPrice(livePrice != null ? livePrice.doubleValue() : 0F);
         tx.setTimestamp_t(new java.sql.Timestamp(System.currentTimeMillis()));
         transactionRepo.save(tx);
         return getPortfolioDTO(saved);
+    }
+
+    private Double getLivePriceOrFallback(Stocks stock) {
+        if (stock == null) return null;
+        String symbol = stock.getStock_sym();
+        if (symbol != null && !symbol.trim().isEmpty()) {
+            com.FinSight_Backend.dto.MarketPriceDTO live = marketDataClient.getPrice(symbol.trim());
+            if (live != null && live.getPrice() != null) {
+                return live.getPrice();
+            }
+        }
+        return stock.getCurrent_price() != null ? stock.getCurrent_price().doubleValue() : null;
     }
 
     @Override
