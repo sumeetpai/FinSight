@@ -4,54 +4,26 @@ import com.FinSight_Backend.model.Portfolio;
 import com.FinSight_Backend.model.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
-<<<<<<< HEAD
-=======
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.annotation.Rollback;
->>>>>>> 323f0136fc4e141b74bb75a0c52ada2cc2f11153
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
-<<<<<<< HEAD
-import static org.junit.jupiter.api.Assertions.*;
-
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = Replace.ANY)
-@ActiveProfiles("test")
-=======
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @ActiveProfiles("test")
 // Allow DataJpaTest to replace the DataSource with an embedded one for fast, isolated tests
 @AutoConfigureTestDatabase(replace = Replace.ANY)
->>>>>>> 323f0136fc4e141b74bb75a0c52ada2cc2f11153
 class PortfolioRepoTest {
 
     @Autowired
     private PortfolioRepo portfolioRepo;
 
     @Autowired
-<<<<<<< HEAD
-    private UserRepo userRepo;
-
-    @Test
-    void findByUserId_returnsPortfolios() {
-        User user = new User();
-        user.setUsername("u");
-        user = userRepo.save(user);
-
-        Portfolio p = new Portfolio();
-        p.setName("P1");
-        p.setUser(user);
-        portfolioRepo.save(p);
-
-        List<Portfolio> found = portfolioRepo.findByUserId(user.getUser_id());
-        assertEquals(1, found.size());
-=======
     private UserRepo userRepo; // persist users explicitly to avoid transient references
 
     @Test
@@ -144,6 +116,5 @@ class PortfolioRepoTest {
         portfolioRepo.delete(saved);
 
         assertThat(portfolioRepo.findById(id)).isEmpty();
->>>>>>> 323f0136fc4e141b74bb75a0c52ada2cc2f11153
     }
 }

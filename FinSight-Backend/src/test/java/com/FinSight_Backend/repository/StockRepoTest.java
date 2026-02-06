@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = Replace.ANY)
-class StocksRepoTest {
+class StockRepoTest {
 
     @Autowired
     private StocksRepo stocksRepo;
