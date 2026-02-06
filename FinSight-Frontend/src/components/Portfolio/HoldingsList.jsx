@@ -3,7 +3,7 @@ import { TrendingUp, TrendingDown, Trash2, Eye } from 'lucide-react';
 import { portfolioApi } from '../../services/portfolioApi.js';
 import { StockInsightModal } from './StockInsightModal.jsx';
 
-export function HoldingsList({ portfolio, onHoldingsChange }) {
+export function HoldingsList({ portfolio, onHoldingsChange, onUpdate }) {
   const [removingId, setRemovingId] = useState(null);
   const [removeQty, setRemoveQty] = useState('');
   const [removing, setRemoving] = useState(false);
@@ -19,7 +19,7 @@ export function HoldingsList({ portfolio, onHoldingsChange }) {
 
   const handleRemove = async (holding) => {
     if (!portfolio?.id) return;
-    const qtyNum = parseFloat(removeQty);
+    const qtyNum = parseInt(removeQty, 10);
     if (!Number.isFinite(qtyNum) || qtyNum <= 0) return;
 
     setRemoving(true);
@@ -31,9 +31,8 @@ export function HoldingsList({ portfolio, onHoldingsChange }) {
       );
       setRemovingId(null);
       setRemoveQty('');
-      if (onHoldingsChange) {
-        onHoldingsChange();
-      }
+      if (onHoldingsChange) onHoldingsChange();
+      if (onUpdate) onUpdate();
     } catch (err) {
       console.error('Failed to remove stock from portfolio:', err);
     } finally {
@@ -125,8 +124,8 @@ export function HoldingsList({ portfolio, onHoldingsChange }) {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <input
                     type="number"
-                    step="0.0001"
-                    min="0.0001"
+                    step="1"
+                    min="1"
                     value={removeQty}
                     onChange={(e) => setRemoveQty(e.target.value)}
                     className="w-full sm:w-40 px-3 py-2 border border-red-200 rounded-lg bg-white focus:ring-2 focus:ring-red-300 focus:border-transparent"

@@ -55,6 +55,8 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
     if (onPortfolioUpdate) {
       onPortfolioUpdate(updated || portfolio);
     }
+    // refresh transactions list in case holdings changed
+    setTransactionsRefreshKey(k => k + 1);
   };
 
   useEffect(() => {
@@ -246,7 +248,7 @@ export function PortfolioDetails({ portfolio: initialPortfolio, onBack, onPortfo
           </div>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-white/20 shadow-lg overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-white/20 shadow-lg overflow-visible">
           <div className="border-b border-white/30">
             <div className="flex">
               <button

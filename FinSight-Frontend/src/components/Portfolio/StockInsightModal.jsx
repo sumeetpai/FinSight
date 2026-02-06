@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 function CandleChart({ candles }) {
+  const svgRef = useRef(null);
+  const [hover, setHover] = useState(null);
   const data = useMemo(() => {
     if (!candles || candles.length === 0) return [];
     return candles.slice(-60);
@@ -17,8 +20,8 @@ function CandleChart({ candles }) {
     );
   }
 
-  const width = 640;
-  const height = 260;
+  const width = 760;
+  const height = 380;
   const padding = 24;
   const highs = data.map(c => c.high);
   const lows = data.map(c => c.low);
@@ -31,16 +34,110 @@ function CandleChart({ candles }) {
   const yFor = (value) =>
     padding + ((maxHigh - value) / range) * (height - padding * 2);
 
+  const formatPrice = (value) => {
+    if (typeof value !== 'number' || Number.isNaN(value)) return '--';
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+
+  const parseTime = (value) => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value === 'number') {
+      const ms = value < 1e12 ? value * 1000 : value;
+      return new Date(ms);
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const formatDate = (value) => {
+    const date = parseTime(value);
+    if (!date) return '--';
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: '2-digit'
+    }).format(date);
+  };
+
+  const yTicks = 5;
+  const yTickValues = Array.from({ length: yTicks }, (_, i) => {
+    const t = i / (yTicks - 1);
+    return maxHigh - t * range;
+  });
+
+  const xTicks = Math.min(6, data.length);
+  const xTickIndices = Array.from({ length: xTicks }, (_, i) => {
+    if (xTicks === 1) return 0;
+    return Math.round((i / (xTicks - 1)) * (data.length - 1));
+  });
+
+  const handleMouseMove = (event) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const scaleX = width / rect.width;
+    const scaleY = height / rect.height;
+    const mouseX = (event.clientX - rect.left) * scaleX;
+    const mouseY = (event.clientY - rect.top) * scaleY;
+    const rawIndex = (mouseX - padding) / xStep;
+    const index = Math.min(data.length - 1, Math.max(0, Math.round(rawIndex)));
+    const candle = data[index];
+    const candleX = padding + index * xStep;
+    const candleY = yFor(candle.close);
+    setHover({
+      index,
+      candle,
+      mouseX,
+      mouseY,
+      screenX: event.clientX - rect.left,
+      screenY: event.clientY - rect.top,
+      rectWidth: rect.width,
+      rectHeight: rect.height,
+      candleX,
+      candleY
+    });
+  };
+
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full overflow-x-auto relative">
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-64 bg-white rounded-xl border border-gray-200"
+        className="w-full h-72 bg-white rounded-xl border border-gray-200"
         role="img"
         aria-label="Candlestick chart"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHover(null)}
       >
         <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#e5e7eb" />
         <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#e5e7eb" />
+
+        {yTickValues.map((value, idx) => {
+          const y = yFor(value);
+          return (
+            <g key={`y-${idx}`}>
+              <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="#f1f5f9" />
+              <text x={padding - 6} y={y + 4} textAnchor="end" fontSize="10" fill="#94a3b8">
+                {formatPrice(value)}
+              </text>
+            </g>
+          );
+        })}
+
+        {xTickIndices.map((index) => {
+          const x = padding + index * xStep;
+          return (
+            <g key={`x-${index}`}>
+              <line x1={x} y1={height - padding} x2={x} y2={height - padding + 4} stroke="#cbd5e1" />
+              <text x={x} y={height - padding + 16} textAnchor="middle" fontSize="10" fill="#94a3b8">
+                {formatDate(data[index].time)}
+              </text>
+            </g>
+          );
+        })}
+
         {data.map((candle, i) => {
           const x = padding + i * xStep;
           const openY = yFor(candle.open);
@@ -65,7 +162,43 @@ function CandleChart({ candles }) {
             </g>
           );
         })}
+
+        {hover && (
+          <g>
+            <line
+              x1={hover.candleX}
+              y1={padding}
+              x2={hover.candleX}
+              y2={height - padding}
+              stroke="#cbd5e1"
+              strokeDasharray="3 3"
+            />
+            <circle cx={hover.candleX} cy={hover.candleY} r="3" fill="#1d4ed8" />
+          </g>
+        )}
       </svg>
+
+      {hover && (
+        <div
+          className="pointer-events-none absolute bg-white/95 border border-slate-200 shadow-lg rounded-lg px-3 py-2 text-xs text-slate-700 z-50"
+          style={{
+            left: Math.max(8, Math.min(hover.screenX + 12, hover.rectWidth - 180)),
+            top: Math.max(8, Math.min(hover.screenY - 12, hover.rectHeight - 110))
+          }}
+        >
+          <div className="text-[11px] text-slate-500">{formatDate(hover.candle.time)}</div>
+          <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1">
+            <span>Open</span>
+            <span className="text-right font-semibold">{formatPrice(hover.candle.open)}</span>
+            <span>High</span>
+            <span className="text-right font-semibold">{formatPrice(hover.candle.high)}</span>
+            <span>Low</span>
+            <span className="text-right font-semibold">{formatPrice(hover.candle.low)}</span>
+            <span>Close</span>
+            <span className="text-right font-semibold">{formatPrice(hover.candle.close)}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -115,9 +248,9 @@ export function StockInsightModal({ symbol, name, onClose }) {
     };
   }, [symbol]);
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl w-full max-w-4xl p-6 shadow-2xl border border-white/20">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] overflow-y-auto">
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl w-full max-w-6xl p-6 shadow-2xl border border-white/20 max-h-none overflow-visible">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-2xl font-bold text-gray-900">{symbol}</h3>
@@ -160,6 +293,7 @@ export function StockInsightModal({ symbol, name, onClose }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

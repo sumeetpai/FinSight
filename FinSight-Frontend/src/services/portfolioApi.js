@@ -18,14 +18,17 @@ class PortfolioService {
           .filter(p => p.active !== false) // Only active portfolios
           .map(async (portfolioData) => {
             try {
+              const stockEntries = Array.isArray(portfolioData.stock_entries)
+                ? portfolioData.stock_entries
+                : [];
               // Fetch stock details for each stock entry
-              const totalShares = portfolioData.stock_entries.reduce((sum, e) => sum + (e.quantity || 0), 0);
+              const totalShares = stockEntries.reduce((sum, e) => sum + (e.quantity || 0), 0);
               const averageCost = totalShares > 0
                 ? (Number(portfolioData.cost_basis ?? 0) / totalShares)
                 : 0;
 
               const holdingsWithStocks = await Promise.all(
-                portfolioData.stock_entries.map(async (entry) => {
+                stockEntries.map(async (entry) => {
                   try {
                     const stockResponse = await fetch(`${API_BASE_URL}/stocks/${entry.stock_id}`);
                     if (!stockResponse.ok) {
@@ -137,6 +140,34 @@ class PortfolioService {
     });
   }
 
+  // Remove stock from a portfolio (records a transaction server-side)
+  async removeStockFromPortfolio(portfolioId, stockId, qty, userId = 4) {
+    return apiCall(async () => {
+      const response = await fetch(`${API_BASE_URL}/portfolio/${portfolioId}/stocks/${stockId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          qty: qty,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Failed to remove stock: ${response.status} ${errorData}`);
+      }
+
+      return await response.json();
+    }, {
+      successMessage: 'Stock removed from portfolio!',
+      errorMessage: 'Failed to remove stock from portfolio',
+      showLoadingToast: true,
+      loadingMessage: 'Removing stock...'
+    });
+  }
+
   // Delete a portfolio (soft delete by setting active to false)
   async deletePortfolio(portfolioId) {
     return apiCall(async () => {
@@ -180,13 +211,16 @@ class PortfolioService {
       }
 
       // Fetch stock details for each stock entry
-      const totalShares = portfolioData.stock_entries.reduce((sum, e) => sum + (e.quantity || 0), 0);
+      const stockEntries = Array.isArray(portfolioData.stock_entries)
+        ? portfolioData.stock_entries
+        : [];
+      const totalShares = stockEntries.reduce((sum, e) => sum + (e.quantity || 0), 0);
       const averageCost = totalShares > 0
         ? (Number(portfolioData.cost_basis ?? 0) / totalShares)
         : 0;
 
       const holdingsWithStocks = await Promise.all(
-        portfolioData.stock_entries.map(async (entry) => {
+        stockEntries.map(async (entry) => {
           try {
             const stockResponse = await fetch(`${API_BASE_URL}/stocks/${entry.stock_id}`);
             if (!stockResponse.ok) {
