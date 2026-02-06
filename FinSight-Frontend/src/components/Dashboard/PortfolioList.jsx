@@ -4,10 +4,13 @@ import { CreatePortfolioModal } from './CreatePortfolioModal.jsx';
 import { PortfolioCard } from './PortfolioCard.jsx';
 import { portfolioApi } from '../../services/portfolioApi.js';
 
+const API_BASE_URL = 'http://localhost:8080/api/v1';
+
 export function PortfolioList({ onSelectPortfolio, refreshTrigger }) {
   const [portfolios, setPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [portfolioRisks, setPortfolioRisks] = useState({});
 
   useEffect(() => {
     loadPortfolios();
@@ -29,6 +32,56 @@ export function PortfolioList({ onSelectPortfolio, refreshTrigger }) {
       setShowCreateModal(false);
     }
   };
+
+  useEffect(() => {
+    let alive = true;
+
+    const fetchRiskScores = async () => {
+      if (!portfolios.length) {
+        if (alive) setPortfolioRisks({});
+        return;
+      }
+
+      const riskEntries = await Promise.all(
+        portfolios.map(async (portfolio) => {
+          const holdings = portfolio.holdings || [];
+          if (!holdings.length) {
+            return [portfolio.id, null];
+          }
+
+          const risks = await Promise.all(
+            holdings.map(async (holding) => {
+              const symbol = holding.stock?.symbol;
+              if (!symbol) return null;
+              try {
+                const resp = await fetch(`${API_BASE_URL}/market/risk/${encodeURIComponent(symbol)}`);
+                if (!resp.ok) return null;
+                const data = await resp.json();
+                const score = Number(data?.risk_score);
+                return Number.isFinite(score) ? score : null;
+              } catch {
+                return null;
+              }
+            })
+          );
+
+          const valid = risks.filter((v) => Number.isFinite(v));
+          if (!valid.length) return [portfolio.id, null];
+          const avg = valid.reduce((sum, v) => sum + v, 0) / valid.length;
+          return [portfolio.id, avg];
+        })
+      );
+
+      if (!alive) return;
+      setPortfolioRisks(Object.fromEntries(riskEntries));
+    };
+
+    fetchRiskScores();
+
+    return () => {
+      alive = false;
+    };
+  }, [portfolios]);
 
   const calculatePortfolioValue = (portfolio) => {
     if (!portfolio.holdings) return 0;
@@ -104,6 +157,7 @@ export function PortfolioList({ onSelectPortfolio, refreshTrigger }) {
               value={calculatePortfolioValue(portfolio)}
               gain={calculatePortfolioGain(portfolio)}
               gainPercent={calculatePortfolioGainPercent(portfolio)}
+              riskScore={portfolioRisks[portfolio.id]}
               onClick={() => onSelectPortfolio(portfolio)}
             />
           ))}

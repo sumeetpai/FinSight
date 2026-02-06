@@ -1,8 +1,16 @@
-import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Shield } from 'lucide-react';
 
-export function PortfolioCard({ portfolio, value, gain, gainPercent, onClick }) {
+export function PortfolioCard({ portfolio, value, gain, gainPercent, riskScore, onClick }) {
   const isPositive = gain >= 0;
   const safeGainPercent = Number(gainPercent ?? 0) || 0;
+  const safeRiskScore = Number.isFinite(riskScore) ? riskScore : null;
+  const riskClass = safeRiskScore === null
+    ? 'text-slate-500'
+    : safeRiskScore <= 40
+      ? 'text-green-600'
+      : safeRiskScore <= 60
+        ? 'text-yellow-600'
+        : 'text-red-600';
 
   return (
     <div
@@ -52,8 +60,17 @@ export function PortfolioCard({ portfolio, value, gain, gainPercent, onClick }) 
           </div>
         </div>
 
-        <div className="text-sm text-gray-600">
-          {portfolio.holdings?.length || 0} {portfolio.holdings?.length === 1 ? 'holding' : 'holdings'}
+        <div className="flex items-center justify-between text-sm text-gray-600">
+          <div>
+            {portfolio.holdings?.length || 0} {portfolio.holdings?.length === 1 ? 'holding' : 'holdings'}
+          </div>
+          <div className="flex items-center gap-1 text-slate-600">
+            <Shield className="w-4 h-4" />
+            <span className={`font-semibold ${riskClass}`}>
+              {safeRiskScore !== null ? safeRiskScore.toFixed(2) : '--'}
+            </span>
+            <span className="text-slate-500">Risk</span>
+          </div>
         </div>
       </div>
     </div>
